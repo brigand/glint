@@ -1,0 +1,10 @@
+[package]
+authors = ["Frankie Bagnardi <f.bagnardi@gmail.com>"]
+edition = "2018"
+name = "clint"
+version = "0.1.0"
+
+[dependencies]
+clap = "2"
+crossterm = "0.10"
+
