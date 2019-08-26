@@ -1,4 +1,12 @@
-use crossterm::Color;
+use crossterm::{self as ct, Color};
+
+pub fn reset() -> Color {
+    Color::Reset
+}
+
+pub fn reset_item() -> ct::Output {
+    ct::Output(ct::style("").with(reset()).on(reset()).to_string())
+}
 
 pub fn theme_user_input() -> Color {
     Color::Blue

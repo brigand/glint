@@ -1,13 +1,11 @@
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{cursor, queue, style, Clear, ClearType, Goto, InputEvent, KeyEvent, Output};
-use std::io::{stdout, Write};
+use crossterm::{queue, style, Clear, ClearType, Goto, InputEvent, KeyEvent, Output};
 
 #[derive(Debug)]
 pub struct TypePrompt<'a> {
     config: &'a mut Config,
     input: String,
-    rows: Option<(u16, u16)>,
     selected_index: u16,
 }
 
@@ -22,7 +20,6 @@ impl<'a> TypePrompt<'a> {
         TypePrompt {
             config,
             input: Default::default(),
-            rows: Default::default(),
             selected_index: 0,
         }
     }
@@ -55,15 +52,7 @@ impl<'a> TypePrompt<'a> {
     }
 
     pub fn run(mut self) -> TypePromptResult {
-        let mut stdout = stdout();
-        let cursor = cursor();
-        let term = crossterm::terminal();
-
-        let mut row: u16 = cursor.pos().1 + 1;
-
-        if self.rows.is_none() {
-            self.rows = Some((row, row));
-        }
+        let mut buffer = TermBuffer::new();
 
         let input = crossterm::input();
         let mut sync_stdin = input.read_sync();
@@ -78,9 +67,6 @@ impl<'a> TypePrompt<'a> {
                 false => sync_stdin.next(),
             };
 
-            let rows = self.rows.unwrap();
-
-            eprintln!("{:?}", event);
             match event {
                 Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
                     return TypePromptResult::Terminate;
@@ -91,7 +77,7 @@ impl<'a> TypePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
                     self.input.push(c.to_ascii_lowercase());
                 }
-                Some(InputEvent::Backspace(KeyEvent::Backspace)) => {
+                Some(InputEvent::Keyboard(KeyEvent::Backspace)) => {
                     self.input.pop();
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
@@ -114,49 +100,28 @@ impl<'a> TypePrompt<'a> {
                 return TypePromptResult::Type(types[0].to_string());
             }
 
-            let cursor_rest = {
+            let after_prompt_x = {
                 let prompt_pre = "Filter: ";
                 let prompt_post = &self.input;
-                queue!(
-                    stdout,
-                    Goto(0, row),
-                    Output(format!(
-                        "{}{} {}\n",
-                        prompt_pre,
-                        style(prompt_post).with(crate::color::theme_user_input()),
-                        self.input.len()
-                    ))
-                );
+                buffer.push_line(format!(
+                    "{}{} {}\n",
+                    prompt_pre,
+                    style(prompt_post).with(crate::color::theme_user_input()),
+                    self.input.len()
+                ));
                 let x = prompt_pre.len() + prompt_post.len();
-                let y = row;
-                row += 1;
-                (x as u16, y)
+                x as u16
             };
 
             for ty in types {
                 let color = crate::color::clint_type_to_color(ty);
-                queue!(
-                    stdout,
-                    Goto(0, row),
-                    Output(style(ty.to_string()).with(color).to_string()),
-                    Output("\n".to_string())
-                );
-                row += 1;
-                term.scroll_down(1);
-            }
-            row -= 1;
-
-            if row < rows.1 {
-                queue!(stdout, Goto(0, row + 1), Clear(ClearType::FromCursorDown));
+                let line = format!("{}", style(ty.to_string()).with(color),);
+                buffer.push_line(line);
             }
 
-            self.rows = Some((rows.0, row));
-
-            queue!(stdout, Goto(cursor_rest.0, cursor_rest.1));
-
-            stdout.flush();
+            buffer.clear_and_render();
+            buffer.flush();
+            buffer.set_cursor_relative_to_flush(after_prompt_x, 1);
         }
-
-        TypePromptResult::Escape
     }
 }
