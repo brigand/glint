@@ -1,5 +1,9 @@
 use crossterm::Color;
 
+pub fn theme_user_input() -> Color {
+    Color::Blue
+}
+
 pub fn clint_type_to_color(ty: &str) -> Color {
     match ty {
         "build" => Color::White,
