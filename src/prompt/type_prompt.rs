@@ -119,9 +119,8 @@ impl<'a> TypePrompt<'a> {
                 buffer.push_line(line);
             }
 
-            buffer.set_cursor((after_prompt_x, 0));
-            buffer.clear_and_render();
-
+            buffer.set_next_cursor((after_prompt_x, 0));
+            buffer.render_frame();
             buffer.flush();
         }
     }

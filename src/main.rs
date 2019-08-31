@@ -1,12 +1,6 @@
 mod cli;
 
-mod color;
-mod config;
-mod prompt;
-mod term_buffer;
-
-pub use config::Config;
-pub use term_buffer::TermBuffer;
+use clint::{prompt, Config};
 
 fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
     match crossterm::RawScreen::into_raw_mode() {

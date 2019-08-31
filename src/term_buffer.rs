@@ -1,8 +1,16 @@
 use crossterm as ct;
 use std::io::{self, Write as _W};
 
-/// A stateful view of what's currently rendered, and functionality
-/// for updating it in a consistent way.
+/// Represents a range of lines in a terminal and the cursor position. This is
+/// suitable when you don't want to use an "alternate screen", but rather retain
+/// previous terminal output, such as shell prompts/responses.
+///
+/// New frames are rendered by replacing the lines. All operations work on a relative
+/// coordinate system where (0, 0) is the top-left corner of the lines TermBuffer controls.
+///
+/// Further, we never check the actual cursor position, but rather move the cursor relative
+/// to its current position. The meaning of (0, 0) is actually the cursor position when TermBuffer
+/// first renders.
 pub struct TermBuffer {
     state: State,
     flushed: State,
@@ -17,9 +25,15 @@ impl Drop for TermBuffer {
         // self.cursor_to_end();
         self.state = Default::default();
 
-        self.clear_and_render();
+        self.render_frame();
         ct::queue!(self.stdout, ct::Output("\n".to_string()));
         self.flush();
+    }
+}
+
+impl Default for TermBuffer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -40,24 +54,8 @@ impl TermBuffer {
         self.state.push(row);
     }
 
-    /// Clears from the cursor position down
-    fn queue_clear(&mut self) {
-        ct::queue!(self.stdout, ct::Clear(ct::ClearType::FromCursorDown));
-    }
-
-    fn cursor_to_start(&mut self) {
-        let (x, y) = self.flushed.cursor;
-
-        // if x > 0 {
-        ct::queue!(self.stdout, ct::Left(1000));
-        // }
-        if y > 0 {
-            ct::queue!(self.stdout, ct::Up(y));
-        }
-    }
-
     /// Positions the cursor where (0, 0) is the first character printed by this program
-    pub fn set_cursor(&mut self, cursor: (u16, u16)) {
+    pub fn set_next_cursor(&mut self, cursor: (u16, u16)) {
         self.state.set_cursor(cursor);
     }
 
@@ -66,7 +64,7 @@ impl TermBuffer {
         ct::queue!(self.stdout, ct::Goto(0, h));
     }
 
-    pub fn clear_and_render(&mut self) {
+    pub fn render_frame(&mut self) {
         self.cursor_to_start();
         self.queue_clear();
 
@@ -111,6 +109,22 @@ impl TermBuffer {
 
         // ct::queue!(self.stdout, ct::Goto(cursor_saved.0, cursor_saved.1));
         // let _r = self.stdout.flush();
+    }
+
+    /// Clears from the cursor position down
+    fn queue_clear(&mut self) {
+        ct::queue!(self.stdout, ct::Clear(ct::ClearType::FromCursorDown));
+    }
+
+    fn cursor_to_start(&mut self) {
+        let (x, y) = self.flushed.cursor;
+
+        // if x > 0 {
+        ct::queue!(self.stdout, ct::Left(1000));
+        // }
+        if y > 0 {
+            ct::queue!(self.stdout, ct::Up(y));
+        }
     }
 
     fn scroll_down(&mut self, count: i16) {
