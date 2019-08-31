@@ -26,7 +26,7 @@ impl Drop for TermBuffer {
         self.state = Default::default();
 
         self.render_frame();
-        ct::queue!(self.stdout, ct::Output("\n".to_string()));
+        ct::queue!(self.stdout, ct::Output("\n".to_string())).unwrap();
         self.flush();
     }
 }
@@ -60,8 +60,8 @@ impl TermBuffer {
     }
 
     pub fn cursor_to_end(&mut self) {
-        let (w, h) = self.terminal.terminal_size();
-        ct::queue!(self.stdout, ct::Goto(0, h));
+        let (_, h) = self.terminal.terminal_size();
+        ct::queue!(self.stdout, ct::Goto(0, h)).unwrap();
     }
 
     pub fn render_frame(&mut self) {
@@ -76,67 +76,46 @@ impl TermBuffer {
                 ct::Output(item.to_string()),
                 ct::Output("\n".to_string()),
                 ct::Left(1000)
-            );
+            )
+            .unwrap();
         }
 
         let (cx, cy) = (0, state.len() as u16);
         let (dx, dy) = state.get_cursor();
         if dy < cy {
-            ct::queue!(self.stdout, ct::Up(cy - dy));
+            ct::queue!(self.stdout, ct::Up(cy - dy)).unwrap();
         } else if dy > cy {
-            ct::queue!(self.stdout, ct::Down(dy - cy));
+            ct::queue!(self.stdout, ct::Down(dy - cy)).unwrap();
         }
         if dx < cx {
-            ct::queue!(self.stdout, ct::Left(cx - dx));
+            ct::queue!(self.stdout, ct::Left(cx - dx)).unwrap();
         } else if dx > cx {
-            ct::queue!(self.stdout, ct::Right(dx - cx));
+            ct::queue!(self.stdout, ct::Right(dx - cx)).unwrap();
         }
 
-        ct::queue!(self.stdout, crate::color::reset_item());
+        ct::queue!(self.stdout, crate::color::reset_item()).unwrap();
 
         self.flushed = state;
     }
 
     pub fn flush(&mut self) {
-        let _r = self.stdout.flush();
-
-        // let cursor_saved = ct::cursor().pos();
-        // self.cursor_to_end();
-        // let _r = self.stdout.flush();
-
-        // let cursor_final = ct::cursor().pos();
-        // self.flushed.first_row = cursor_final.1 - self.flushed.rows;
-
-        // ct::queue!(self.stdout, ct::Goto(cursor_saved.0, cursor_saved.1));
-        // let _r = self.stdout.flush();
+        self.stdout.flush().expect("flush failed");
     }
 
     /// Clears from the cursor position down
     fn queue_clear(&mut self) {
-        ct::queue!(self.stdout, ct::Clear(ct::ClearType::FromCursorDown));
+        ct::queue!(self.stdout, ct::Clear(ct::ClearType::FromCursorDown)).unwrap();
     }
 
     fn cursor_to_start(&mut self) {
-        let (x, y) = self.flushed.cursor;
+        let (_, y) = self.flushed.cursor;
 
         // if x > 0 {
-        ct::queue!(self.stdout, ct::Left(1000));
+        ct::queue!(self.stdout, ct::Left(1000)).unwrap();
         // }
         if y > 0 {
-            ct::queue!(self.stdout, ct::Up(y));
+            ct::queue!(self.stdout, ct::Up(y)).unwrap();
         }
-    }
-
-    fn scroll_down(&mut self, count: i16) {
-        if count < 1 {
-            return;
-        }
-
-        // This happens immediately (I think) so we should update `flushed` now.
-        self.flushed.first_row = self.flushed.first_row.saturating_sub(count as u16);
-        self.state.first_row = self.state.first_row.saturating_sub(count as u16);
-
-        let _r = self.terminal.scroll_down(count);
     }
 }
 
@@ -159,10 +138,6 @@ impl Default for State {
 }
 
 impl State {
-    pub fn is_empty(&self) -> bool {
-        self.rows.len() < 1
-    }
-
     pub fn len(&self) -> usize {
         self.rows.len()
     }

@@ -1,6 +1,6 @@
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{queue, style, Clear, ClearType, Goto, InputEvent, KeyEvent, Output};
+use crossterm::{style, InputEvent, KeyEvent};
 
 #[derive(Debug)]
 pub struct TypePrompt<'a> {
