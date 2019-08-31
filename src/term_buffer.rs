@@ -6,7 +6,6 @@ use std::io::{self, Write as _W};
 pub struct TermBuffer {
     state: State,
     flushed: State,
-    rows: Vec<String>,
 
     // Cache some structs
     terminal: ct::Terminal,
@@ -15,13 +14,12 @@ pub struct TermBuffer {
 
 impl Drop for TermBuffer {
     fn drop(&mut self) {
-        self.cursor_to_end();
-        ct::queue!(
-            self.stdout,
-            crate::color::reset_item(),
-            ct::Output("\n".to_string())
-        );
-        self.stdout.flush();
+        // self.cursor_to_end();
+        self.state = Default::default();
+
+        self.clear_and_render();
+        ct::queue!(self.stdout, ct::Output("\n".to_string()));
+        self.flush();
     }
 }
 
@@ -30,38 +28,37 @@ impl TermBuffer {
         TermBuffer {
             state: Default::default(),
             flushed: Default::default(),
-            rows: Default::default(),
 
             // Cache some structs
             terminal: ct::terminal(),
             stdout: io::stdout(),
         }
-        .init()
-    }
-
-    /// Private utility to keep ::new() clean
-    fn init(mut self) -> Self {
-        let (x, y) = ct::cursor().pos();
-
-        self.state.cursor = (x, y);
-        self.state.first_row = y;
-        self.flushed = self.state.clone();
-
-        self
     }
 
     /// Add a row to the desired output
     pub fn push_line(&mut self, row: impl Into<String>) {
-        self.rows.push(row.into());
-        self.state.rows += 1;
+        self.state.push(row);
     }
 
+    /// Clears from the cursor position down
     fn queue_clear(&mut self) {
-        ct::queue!(
-            self.stdout,
-            ct::Goto(0, self.flushed.first_row),
-            ct::Clear(ct::ClearType::FromCursorDown)
-        );
+        ct::queue!(self.stdout, ct::Clear(ct::ClearType::FromCursorDown));
+    }
+
+    fn cursor_to_start(&mut self) {
+        let (x, y) = self.flushed.cursor;
+
+        // if x > 0 {
+        ct::queue!(self.stdout, ct::Left(1000));
+        // }
+        if y > 0 {
+            ct::queue!(self.stdout, ct::Up(y));
+        }
+    }
+
+    /// Positions the cursor where (0, 0) is the first character printed by this program
+    pub fn set_cursor(&mut self, cursor: (u16, u16)) {
+        self.state.set_cursor(cursor);
     }
 
     pub fn cursor_to_end(&mut self) {
@@ -69,59 +66,51 @@ impl TermBuffer {
         ct::queue!(self.stdout, ct::Goto(0, h));
     }
 
-    pub fn clear(&mut self) {
-        self.queue_clear();
-        self.rows.clear();
-    }
-
     pub fn clear_and_render(&mut self) {
-        let row_count = self.rows.len() as u16;
-        let additional_rows = row_count.saturating_sub(self.flushed.rows);
-
+        self.cursor_to_start();
         self.queue_clear();
 
-        let blank_lines: String = std::iter::repeat("\n")
-            .take(additional_rows as usize)
-            .collect();
+        let state = self.state.reset();
 
-        self.scroll_down(additional_rows as i16);
-
-        ct::queue!(
-            self.stdout,
-            ct::Goto(0, self.flushed.first_row),
-            ct::Output(blank_lines),
-            ct::Goto(0, self.flushed.first_row)
-        );
-
-        self.flushed.rows = row_count;
-
-        let rows = std::mem::replace(&mut self.rows, Vec::new());
-
-        for (i, item) in rows.into_iter().enumerate() {
-            let y = self.flushed.first_row + i as u16;
-            ct::queue!(self.stdout, ct::Goto(0, y), ct::Output(item));
+        for item in state.rows.iter() {
+            ct::queue!(
+                self.stdout,
+                ct::Output(item.to_string()),
+                ct::Output("\n".to_string()),
+                ct::Left(1000)
+            );
         }
-        ct::queue!(self.stdout, crate::color::reset_item());
-    }
 
-    pub fn set_cursor_relative_to_flush(&mut self, x: u16, y: u16) {
-        ct::queue!(self.stdout, ct::Goto(x, y + self.flushed.first_row - 1));
-        self.flushed.cursor = (x, y);
-        let _r = self.stdout.flush();
+        let (cx, cy) = (0, state.len() as u16);
+        let (dx, dy) = state.get_cursor();
+        if dy < cy {
+            ct::queue!(self.stdout, ct::Up(cy - dy));
+        } else if dy > cy {
+            ct::queue!(self.stdout, ct::Down(dy - cy));
+        }
+        if dx < cx {
+            ct::queue!(self.stdout, ct::Left(cx - dx));
+        } else if dx > cx {
+            ct::queue!(self.stdout, ct::Right(dx - cx));
+        }
+
+        ct::queue!(self.stdout, crate::color::reset_item());
+
+        self.flushed = state;
     }
 
     pub fn flush(&mut self) {
         let _r = self.stdout.flush();
 
-        let cursor_saved = ct::cursor().pos();
-        self.cursor_to_end();
-        let _r = self.stdout.flush();
+        // let cursor_saved = ct::cursor().pos();
+        // self.cursor_to_end();
+        // let _r = self.stdout.flush();
 
-        let cursor_final = ct::cursor().pos();
-        self.flushed.first_row = cursor_final.1 - self.flushed.rows;
+        // let cursor_final = ct::cursor().pos();
+        // self.flushed.first_row = cursor_final.1 - self.flushed.rows;
 
-        ct::queue!(self.stdout, ct::Goto(cursor_saved.0, cursor_saved.1));
-        let _r = self.stdout.flush();
+        // ct::queue!(self.stdout, ct::Goto(cursor_saved.0, cursor_saved.1));
+        // let _r = self.stdout.flush();
     }
 
     fn scroll_down(&mut self, count: i16) {
@@ -141,7 +130,7 @@ impl TermBuffer {
 #[derive(Clone, Debug)]
 struct State {
     cursor: (u16, u16),
-    rows: u16,
+    rows: Vec<String>,
     first_row: u16,
 }
 
@@ -149,8 +138,34 @@ impl Default for State {
     fn default() -> Self {
         State {
             cursor: (0, 0),
-            rows: 0,
+            rows: vec![],
             first_row: 0,
         }
+    }
+}
+
+impl State {
+    pub fn is_empty(&self) -> bool {
+        self.rows.len() < 1
+    }
+
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    pub fn push(&mut self, row: impl Into<String>) {
+        self.rows.push(row.into());
+    }
+
+    pub fn set_cursor(&mut self, cursor: (u16, u16)) {
+        self.cursor = cursor;
+    }
+
+    pub fn get_cursor(&self) -> (u16, u16) {
+        self.cursor
+    }
+
+    pub fn reset(&mut self) -> Self {
+        std::mem::replace(self, State::default())
     }
 }

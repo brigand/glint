@@ -23,15 +23,17 @@ fn main() {
     let mut config = Config::default();
 
     let ty = match args.value_of("TYPE") {
-        Some(ty) => ty.to_string(),
+        Some(ty) => Some(ty.to_string()),
         None => with_raw(|_raw| match prompt::TypePrompt::new(&mut config).run() {
-            prompt::TypePromptResult::Type(ty) => ty,
-            prompt::TypePromptResult::Terminate => {
-                eprintln!("\nExiting.");
-                std::process::exit(1);
-            }
+            prompt::TypePromptResult::Type(ty) => Some(ty),
+            prompt::TypePromptResult::Terminate => None,
             _ => panic!("no result received"),
         }),
+    };
+
+    let ty = match ty {
+        Some(ty) => ty,
+        None => std::process::exit(1),
     };
 
     println!("ty: {}", ty);

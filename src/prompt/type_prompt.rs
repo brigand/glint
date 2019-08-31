@@ -104,7 +104,7 @@ impl<'a> TypePrompt<'a> {
                 let prompt_pre = "Filter: ";
                 let prompt_post = &self.input;
                 buffer.push_line(format!(
-                    "{}{} {}\n",
+                    "{}{} {}",
                     prompt_pre,
                     style(prompt_post).with(crate::color::theme_user_input()),
                     self.input.len()
@@ -119,9 +119,10 @@ impl<'a> TypePrompt<'a> {
                 buffer.push_line(line);
             }
 
+            buffer.set_cursor((after_prompt_x, 0));
             buffer.clear_and_render();
+
             buffer.flush();
-            buffer.set_cursor_relative_to_flush(after_prompt_x, 1);
         }
     }
 }
