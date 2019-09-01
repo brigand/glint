@@ -36,40 +36,33 @@ impl Font {
     ///         .expect("write_to_buf should return the width");
     /// }
     /// ```
-    pub fn write_to_buf(&self, c: char, output: &mut [String]) -> Option<usize> {
-        let c = self.chars.get(c as usize - CHAR_OFFSET)?;
-
-        for (src, dest) in c.text.iter().zip(output.iter_mut()) {
-            for i in 0..c.width {
-                let c = src.as_bytes().get(i).map(|&c| c).unwrap_or(b' ');
-
-                dest.push(c as char);
-            }
-        }
-
-        Some(c.width)
+    pub fn write_to_buf(&self, s: &str, output: &mut [String]) -> Option<usize> {
+        self.write_to_buf_color(s, output, |s| s.to_string())
     }
 
-    pub fn write_to_buf_color<'a, R: Display>(
-        &'a self,
-        c: char,
+    pub fn write_to_buf_color(
+        &self,
+        s: &str,
         output: &mut [String],
-        style: impl Fn(&'a str) -> R,
+        mut style: impl FnMut(&str) -> String,
     ) -> Option<usize> {
-        let c = self.chars.get(c as usize - CHAR_OFFSET)?;
+        for (i, row) in output.iter_mut().enumerate() {
+            let line: String = s
+                .chars()
+                .filter_map(|c| self.chars.get(c as usize - CHAR_OFFSET))
+                .filter_map(|c| c.text.get(i).map(|s| s.as_str()))
+                .collect();
 
-        for (src, dest) in c.text.iter().zip(output.iter_mut()) {
-            let c = &src[0..c.width];
-            let c = format!(
+            let formatted = format!(
                 "{}{}",
-                style(c),
+                style(&line[..]),
                 ct::style("").with(ct::Color::Reset).on(ct::Color::Reset)
             );
 
-            dest.push_str(&c);
+            row.push_str(&formatted);
         }
 
-        Some(c.width)
+        Some(0)
     }
 
     /// Returns the height of the largest character in the font.

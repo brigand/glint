@@ -10,25 +10,21 @@ pub fn main() {
 
     // println!("{:#?}", font);
 
-    for c in "feat".chars() {
-        font.write_to_buf_color(c, &mut output[..], |s| ct::style(s).with(ct::Color::Red))
-            .expect("write_to_buf should return the width");
-    }
+    font.write_to_buf_color("feat", &mut output[..], |s| {
+        ct::style(s).with(ct::Color::Red).to_string()
+    })
+    .expect("write_to_buf should return the width");
 
-    for c in "(".chars() {
-        font.write_to_buf(c, &mut output[..])
-            .expect("write_to_buf should return the width");
-    }
+    font.write_to_buf("(", &mut output[..])
+        .expect("write_to_buf should return the width");
 
-    for c in "client".chars() {
-        font.write_to_buf_color(c, &mut output[..], |s| ct::style(s).with(ct::Color::Blue))
-            .expect("write_to_buf should return the width");
-    }
+    font.write_to_buf_color("client", &mut output[..], |s| {
+        ct::style(s).with(ct::Color::Blue).to_string()
+    })
+    .expect("write_to_buf should return the width");
 
-    for c in ")".chars() {
-        font.write_to_buf(c, &mut output[..])
-            .expect("write_to_buf should return the width");
-    }
+    font.write_to_buf(")", &mut output[..])
+        .expect("write_to_buf should return the width");
 
     for line in output {
         println!("{}", line);
