@@ -8,3 +8,7 @@ version = "0.1.0"
 clap = "2"
 crossterm = "0.10"
 
+[profile.release]
+lto = true
+debug = false
+opt-level = 3
