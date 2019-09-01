@@ -26,9 +26,25 @@ fn main() {
     };
 
     let ty = match ty {
-        Some(ty) => ty,
+        Some(s) => s,
         None => std::process::exit(1),
     };
 
-    println!("ty: {}", ty);
+    let scope = match args.value_of("SCOPE") {
+        Some(scope) => Some(Some(scope.to_string())),
+        None => with_raw(
+            |_raw| match prompt::ScopePrompt::new(&mut config, &ty).run() {
+                prompt::ScopePromptResult::Scope(scope) => Some(scope),
+                prompt::ScopePromptResult::Terminate => None,
+                _ => panic!("no result received"),
+            },
+        ),
+    };
+
+    let scope = match scope {
+        Some(s) => s,
+        None => std::process::exit(1),
+    };
+
+    println!("ty: {}, scope: {:?}", ty, scope);
 }
