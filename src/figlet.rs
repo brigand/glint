@@ -3,13 +3,13 @@ const CHAR_OFFSET: usize = 32;
 #[derive(Debug, Clone)]
 pub struct Font {
     height: usize,
-    pub chars: Vec<Char>,
+    chars: Vec<Char>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Char {
     width: usize,
-    pub text: Vec<String>,
+    text: Vec<String>,
 }
 
 impl Font {
@@ -29,6 +29,10 @@ impl Font {
         }
 
         Some(c.width)
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
     }
 }
 
