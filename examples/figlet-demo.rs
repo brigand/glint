@@ -9,14 +9,9 @@ pub fn main() {
 
     // println!("{:#?}", font);
 
-    let mut x_offset = 0;
-
     for c in "feat(client)".chars() {
-        let width = font
-            .write_to_buf(c, &mut output[..], x_offset)
+        font.write_to_buf(c, &mut output[..])
             .expect("write_to_buf should return the width");
-
-        x_offset += width;
     }
 
     for line in output {

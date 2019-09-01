@@ -17,7 +17,7 @@ impl Font {
         (0..self.height).map(|_| String::new()).collect()
     }
 
-    pub fn write_to_buf(&self, c: char, output: &mut [String], x_offset: usize) -> Option<usize> {
+    pub fn write_to_buf(&self, c: char, output: &mut [String]) -> Option<usize> {
         let c = self.chars.get(c as usize - CHAR_OFFSET)?;
 
         for (src, dest) in c.text.iter().zip(output.iter_mut()) {
@@ -62,7 +62,7 @@ pub fn parse<'a>(mut iter: impl Iterator<Item = &'a str>) -> Option<Font> {
                     break;
                 }
                 let slice = &line[0..len];
-                current.push(slice.to_string());
+                current.push(slice.replace(hard_blank, " "));
 
                 if current.len() == height {
                     let width = current.iter().fold(0, |max, s| std::cmp::max(max, s.len()));
