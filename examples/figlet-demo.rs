@@ -1,4 +1,5 @@
 use clint::figlet;
+use crossterm as ct;
 use std::fs::read_to_string;
 
 pub fn main() {
@@ -9,7 +10,22 @@ pub fn main() {
 
     // println!("{:#?}", font);
 
-    for c in "feat(client)".chars() {
+    for c in "feat".chars() {
+        font.write_to_buf_color(c, &mut output[..], |s| ct::style(s).with(ct::Color::Red))
+            .expect("write_to_buf should return the width");
+    }
+
+    for c in "(".chars() {
+        font.write_to_buf(c, &mut output[..])
+            .expect("write_to_buf should return the width");
+    }
+
+    for c in "client".chars() {
+        font.write_to_buf_color(c, &mut output[..], |s| ct::style(s).with(ct::Color::Blue))
+            .expect("write_to_buf should return the width");
+    }
+
+    for c in ")".chars() {
         font.write_to_buf(c, &mut output[..])
             .expect("write_to_buf should return the width");
     }

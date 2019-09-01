@@ -1,3 +1,6 @@
+use crossterm as ct;
+use std::fmt::Display;
+
 const CHAR_OFFSET: usize = 32;
 
 #[derive(Debug, Clone)]
@@ -42,6 +45,28 @@ impl Font {
 
                 dest.push(c as char);
             }
+        }
+
+        Some(c.width)
+    }
+
+    pub fn write_to_buf_color<'a, R: Display>(
+        &'a self,
+        c: char,
+        output: &mut [String],
+        style: impl Fn(&'a str) -> R,
+    ) -> Option<usize> {
+        let c = self.chars.get(c as usize - CHAR_OFFSET)?;
+
+        for (src, dest) in c.text.iter().zip(output.iter_mut()) {
+            let c = &src[0..c.width];
+            let c = format!(
+                "{}{}",
+                style(c),
+                ct::style("").with(ct::Color::Reset).on(ct::Color::Reset)
+            );
+
+            dest.push_str(&c);
         }
 
         Some(c.width)
