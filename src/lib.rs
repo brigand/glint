@@ -1,5 +1,6 @@
 mod color;
 mod config;
+pub mod figlet;
 pub mod prompt;
 pub mod term_buffer;
 

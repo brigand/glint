@@ -50,6 +50,7 @@ pub fn main() {
 
         buf.render_frame();
         buf.flush();
-        std::thread::sleep_ms(15);
+        // x
+        std::thread::sleep(std::time::Duration::from_millis(15));
     }
 }
