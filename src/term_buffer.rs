@@ -16,7 +16,7 @@ pub struct TermBuffer {
     flushed: State,
 
     // Cache some structs
-    terminal: ct::Terminal,
+    // terminal: ct::Terminal,
     stdout: io::Stdout,
 }
 
@@ -44,7 +44,7 @@ impl TermBuffer {
             flushed: Default::default(),
 
             // Cache some structs
-            terminal: ct::terminal(),
+            // terminal: ct::terminal(),
             stdout: io::stdout(),
         }
     }
