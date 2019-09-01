@@ -12,19 +12,15 @@ pub fn main() {
 
     font.write_to_buf_color("feat", &mut output[..], |s| {
         ct::style(s).with(ct::Color::Red).to_string()
-    })
-    .expect("write_to_buf should return the width");
+    });
 
-    font.write_to_buf("(", &mut output[..])
-        .expect("write_to_buf should return the width");
+    font.write_to_buf("(", &mut output[..]);
 
     font.write_to_buf_color("client", &mut output[..], |s| {
         ct::style(s).with(ct::Color::Blue).to_string()
-    })
-    .expect("write_to_buf should return the width");
+    });
 
-    font.write_to_buf(")", &mut output[..])
-        .expect("write_to_buf should return the width");
+    font.write_to_buf(")", &mut output[..]);
 
     for line in output {
         println!("{}", line);

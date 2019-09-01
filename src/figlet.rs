@@ -1,5 +1,4 @@
 use crossterm as ct;
-use std::fmt::Display;
 
 const CHAR_OFFSET: usize = 32;
 
@@ -36,7 +35,7 @@ impl Font {
     ///         .expect("write_to_buf should return the width");
     /// }
     /// ```
-    pub fn write_to_buf(&self, s: &str, output: &mut [String]) -> Option<usize> {
+    pub fn write_to_buf(&self, s: &str, output: &mut [String]) -> usize {
         self.write_to_buf_color(s, output, |s| s.to_string())
     }
 
@@ -45,11 +44,17 @@ impl Font {
         s: &str,
         output: &mut [String],
         mut style: impl FnMut(&str) -> String,
-    ) -> Option<usize> {
+    ) -> usize {
+        let chars: Vec<_> = s
+            .chars()
+            .filter_map(|c| self.chars.get(c as usize - CHAR_OFFSET))
+            .collect();
+
+        let width = chars.iter().fold(0, |sum, c| sum + c.width);
+
         for (i, row) in output.iter_mut().enumerate() {
-            let line: String = s
-                .chars()
-                .filter_map(|c| self.chars.get(c as usize - CHAR_OFFSET))
+            let line: String = chars
+                .iter()
                 .filter_map(|c| c.text.get(i).map(|s| s.as_str()))
                 .collect();
 
@@ -62,7 +67,7 @@ impl Font {
             row.push_str(&formatted);
         }
 
-        Some(0)
+        width
     }
 
     /// Returns the height of the largest character in the font.
@@ -110,6 +115,12 @@ pub fn parse<'a>(mut iter: impl Iterator<Item = &'a str>) -> Option<Font> {
                     let width = current.iter().fold(0, |max, s| std::cmp::max(max, s.len()));
 
                     if current.len() == height {
+                        for line in current.iter_mut() {
+                            while line.len() < width {
+                                line.push(' ');
+                            }
+                        }
+
                         chars.push(Char {
                             text: std::mem::replace(&mut current, Vec::with_capacity(height)),
                             width,
