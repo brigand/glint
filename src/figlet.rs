@@ -13,10 +13,26 @@ pub struct Char {
 }
 
 impl Font {
+    /// Creates a Vec for holding figlet output with enough vertical space
+    /// to contain this font.
+    /// You may borrow this as a mutable slice and pass it to `Font::write_to_buf`
     pub fn create_vec(&self) -> Vec<String> {
         (0..self.height).map(|_| String::new()).collect()
     }
 
+    /// Writes a single character to the buffer.
+    /// The length of `output` should be at least `font.height()`, however it's safe to
+    /// pass a smaller slice (the rendering will be cropped).
+    /// The same number of characters will be appeneded to each string, padding with spaces if needed.
+    ///
+    /// #Example
+    /// ```norun
+    /// let mut output = font.create_vec();
+    /// for c in "feat(client)".chars() {
+    ///     font.write_to_buf(c, &mut output[..])
+    ///         .expect("write_to_buf should return the width");
+    /// }
+    /// ```
     pub fn write_to_buf(&self, c: char, output: &mut [String]) -> Option<usize> {
         let c = self.chars.get(c as usize - CHAR_OFFSET)?;
 
@@ -31,11 +47,15 @@ impl Font {
         Some(c.width)
     }
 
+    /// Returns the height of the largest character in the font.
+    /// This operation is very fast.
     pub fn height(&self) -> usize {
         self.height
     }
 }
 
+/// Takes an iterator over lines of a .flf (figlet) file, and attempts to parse
+/// it into a Font, which can be used for rendering.
 pub fn parse<'a>(mut iter: impl Iterator<Item = &'a str>) -> Option<Font> {
     let header: Vec<_> = iter.next()?.split(" ").collect();
 
