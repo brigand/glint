@@ -22,10 +22,12 @@ pub struct TermBuffer {
 
 impl Drop for TermBuffer {
     fn drop(&mut self) {
-        // self.cursor_to_end();
-        self.state = Default::default();
+        if !std::thread::panicking() {
+            self.state = Default::default();
+            self.render_frame();
+        }
+        self.cursor_to_end();
 
-        self.render_frame();
         ct::queue!(self.stdout, ct::Output("\n".to_string())).unwrap();
         self.flush();
     }
