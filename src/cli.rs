@@ -1,7 +1,7 @@
 use clap::clap_app;
 
 pub fn parse() -> clap::ArgMatches<'static> {
-    clap_app!(myapp =>
+    clap_app!(clint =>
         (version: "0.1")
         (author: "Frankie Bagnardi <f.bagnardi@gmail.com>")
         (about: "A friendly commitlint CLI")

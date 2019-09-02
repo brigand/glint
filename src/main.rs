@@ -1,6 +1,6 @@
 mod cli;
 use clap::ArgMatches;
-use clint::{prompt, Config};
+use clint::{prompt, Commit, Config};
 
 fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
     match crossterm::RawScreen::into_raw_mode() {
@@ -98,10 +98,9 @@ fn commit(args: ArgMatches, mut config: Config) {
                 stage = Stage::Complete(ty, scope, message);
             }
             Stage::Complete(ty, scope, message) => {
-                println!(
-                    "Complete ty: {}, scope: {:?}, message: {}",
-                    ty, scope, message
-                );
+                let commit = Commit { ty, scope, message };
+
+                println!("Commit:\n{}", commit.build_message());
                 return;
             }
         }
