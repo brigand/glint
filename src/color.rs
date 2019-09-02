@@ -4,6 +4,10 @@ pub fn reset() -> Color {
     Color::Reset
 }
 
+pub fn reset_display() -> ct::StyledObject<&'static str> {
+    ct::style("").with(Color::Reset)
+}
+
 pub fn reset_item() -> ct::Output {
     ct::Output(ct::style("").with(reset()).on(reset()).to_string())
 }

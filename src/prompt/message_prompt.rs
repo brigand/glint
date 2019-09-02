@@ -16,7 +16,7 @@ pub enum MessagePromptResult {
 }
 
 impl<'a> MessagePrompt<'a> {
-    pub fn new(config: &'a mut Config, ty: &'a str) -> Self {
+    pub fn new(config: &'a mut Config) -> Self {
         MessagePrompt {
             config,
             input: vec![String::new()],
@@ -26,11 +26,6 @@ impl<'a> MessagePrompt<'a> {
 
     pub fn run(mut self) -> MessagePromptResult {
         let mut buffer = TermBuffer::new();
-
-        let figlet = self
-            .config
-            .get_figlet()
-            .expect("Ensure figlet_file points to a valid file, or remove it.");
 
         let input = crossterm::input();
         let mut sync_stdin = input.read_sync();
@@ -132,8 +127,18 @@ impl<'a> MessagePrompt<'a> {
             // The offset for where the editor begins, i.e. the number of push_line calls above.
             let editor_y = 2;
 
-            for line in self.input.iter() {
-                buffer.push_line(line.to_string());
+            for (i, line) in self.input.iter().enumerate() {
+                if i == 0 && line.len() > 50 {
+                    let (good, bad) = crate::string::split_at(&line, 50);
+                    buffer.push_line(format!(
+                        "{}{}{}",
+                        good,
+                        ct::style(bad).with(ct::Color::Red),
+                        crate::color::reset_display(),
+                    ));
+                } else {
+                    buffer.push_line(line.to_string());
+                }
             }
 
             buffer.set_next_cursor((x, y + editor_y));
