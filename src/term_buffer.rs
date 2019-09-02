@@ -61,16 +61,6 @@ impl TermBuffer {
         self.state.set_cursor(cursor);
     }
 
-    fn cursor_to_end(&mut self) {
-        let cursor_y = self.flushed.get_cursor().1;
-        let height = self.flushed.len() as u16;
-        let down = height.saturating_sub(cursor_y);
-        if down > 0 {
-            ct::queue!(self.stdout, ct::Down(down)).unwrap();
-            self.flush();
-        }
-    }
-
     /// This causes us to skip past the currently displayed buffer area and forget about it,
     /// resulting in future renders to happen below it.
     /// If this is called, and then the TermBuffer is dropped, the default behavior of clearing
@@ -117,6 +107,16 @@ impl TermBuffer {
 
     pub fn flush(&mut self) {
         self.stdout.flush().expect("flush failed");
+    }
+
+    fn cursor_to_end(&mut self) {
+        let cursor_y = self.flushed.get_cursor().1;
+        let height = self.flushed.len() as u16;
+        let down = height.saturating_sub(cursor_y);
+        if down > 0 {
+            ct::queue!(self.stdout, ct::Down(down)).unwrap();
+            self.flush();
+        }
     }
 
     /// Clears from the cursor position down
