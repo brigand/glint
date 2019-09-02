@@ -1,9 +1,12 @@
 use crossterm as ct;
+use std::fs::read_to_string;
+use std::io;
+use std::path::Path;
 
 const CHAR_OFFSET: usize = 32;
 
 #[derive(Debug, Clone)]
-pub struct Font {
+pub struct Figlet {
     height: usize,
     chars: Vec<Char>,
 }
@@ -14,7 +17,7 @@ pub struct Char {
     text: Vec<String>,
 }
 
-impl Font {
+impl Figlet {
     /// Creates a Vec for holding figlet output with enough vertical space
     /// to contain this font.
     /// You may borrow this as a mutable slice and pass it to `Font::write_to_buf`
@@ -29,9 +32,9 @@ impl Font {
     ///
     /// #Example
     /// ```norun
-    /// let mut output = font.create_vec();
+    /// let mut output = figlet.create_vec();
     /// for c in "feat(client)".chars() {
-    ///     font.write_to_buf(c, &mut output[..])
+    ///     figlet.write_to_buf(c, &mut output[..])
     ///         .expect("write_to_buf should return the width");
     /// }
     /// ```
@@ -70,6 +73,21 @@ impl Font {
         width
     }
 
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, io::Error> {
+        let contents = read_to_string(path)?;
+        parse(contents.lines()).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                "file exists but appears to be invalid",
+            )
+        })
+    }
+
+    fn from_default() -> Self {
+        let contents = include_str!("big-minimal.flf");
+        parse(contents.lines()).expect("embedded font should be parsable")
+    }
+
     /// Returns the height of the largest character in the font.
     /// This operation is very fast.
     pub fn height(&self) -> usize {
@@ -77,9 +95,15 @@ impl Font {
     }
 }
 
+impl Default for Figlet {
+    fn default() -> Self {
+        Figlet::from_default()
+    }
+}
+
 /// Takes an iterator over lines of a .flf (figlet) file, and attempts to parse
 /// it into a Font, which can be used for rendering.
-pub fn parse<'a>(mut iter: impl Iterator<Item = &'a str>) -> Option<Font> {
+pub fn parse<'a>(mut iter: impl Iterator<Item = &'a str>) -> Option<Figlet> {
     let header: Vec<_> = iter.next()?.split(" ").collect();
 
     let height: usize = header.get(1)?.parse().ok()?;
@@ -132,5 +156,5 @@ pub fn parse<'a>(mut iter: impl Iterator<Item = &'a str>) -> Option<Font> {
         };
     }
 
-    Some(Font { height, chars })
+    Some(Figlet { height, chars })
 }

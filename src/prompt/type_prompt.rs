@@ -1,6 +1,6 @@
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{style, InputEvent, KeyEvent};
+use crossterm::{self as ct, style, InputEvent, KeyEvent};
 
 #[derive(Debug)]
 pub struct TypePrompt<'a> {
@@ -57,6 +57,11 @@ impl<'a> TypePrompt<'a> {
         let input = crossterm::input();
         let mut sync_stdin = input.read_sync();
 
+        let figlet = self
+            .config
+            .get_figlet()
+            .expect("Ensure figlet_file points to a valid file, or remove it.");
+
         let mut first_iteration = true;
         loop {
             let event = match first_iteration {
@@ -100,14 +105,26 @@ impl<'a> TypePrompt<'a> {
                 return TypePromptResult::Type(types[0].to_string());
             }
 
+            let mut header = figlet.create_vec();
+            figlet.write_to_buf_color("<clint>", header.as_mut_slice(), |s| {
+                ct::style(s).with(ct::Color::Magenta).to_string()
+            });
+
+            let y_offset = header.len() as u16;
+
+            for line in header {
+                buffer.push_line(line);
+            }
+
             let after_prompt_x = {
-                let prompt_pre = "Filter: ";
+                let prompt_pre = "Choose a type: ";
                 let prompt_post = &self.input;
+                let underscores = "_".repeat(6 - self.input.len());
                 buffer.push_line(format!(
-                    "{}{} {}",
+                    "{}{}{}",
                     prompt_pre,
                     style(prompt_post).with(crate::color::theme_user_input()),
-                    self.input.len()
+                    underscores,
                 ));
                 let x = prompt_pre.len() + prompt_post.len();
                 x as u16
@@ -119,7 +136,7 @@ impl<'a> TypePrompt<'a> {
                 buffer.push_line(line);
             }
 
-            buffer.set_next_cursor((after_prompt_x, 0));
+            buffer.set_next_cursor((after_prompt_x, y_offset));
             buffer.render_frame();
             buffer.flush();
         }
