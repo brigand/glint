@@ -42,12 +42,11 @@ impl<'a> ScopePrompt<'a> {
         let mut first_iteration = true;
 
         loop {
-            let event = match first_iteration {
-                true => {
-                    first_iteration = false;
-                    None
-                }
-                false => sync_stdin.next(),
+            let event = if first_iteration {
+                first_iteration = false;
+                None
+            } else {
+                sync_stdin.next()
             };
 
             match event {

@@ -25,14 +25,14 @@ impl<'a> TypePrompt<'a> {
     }
 
     /// Attempts to find the item at `self.selected_index`. If greater than
-    /// the number of items, then the last item, or finaly falling back to "misc" which
+    /// the number of items, then the last item, or finally falling back to "misc" which
     /// doesn't normally appear in commitlint.
     fn get_at_selected_index(&self) -> &str {
         let options = self.filter_types();
         options
             .get(self.selected_index as usize)
             .or_else(|| options.last())
-            .map(|&x| x)
+            .copied()
             .unwrap_or("misc")
     }
 
@@ -64,12 +64,11 @@ impl<'a> TypePrompt<'a> {
 
         let mut first_iteration = true;
         loop {
-            let event = match first_iteration {
-                true => {
-                    first_iteration = false;
-                    None
-                }
-                false => sync_stdin.next(),
+            let event = if first_iteration {
+                first_iteration = false;
+                None
+            } else {
+                sync_stdin.next()
             };
 
             match event {

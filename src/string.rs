@@ -4,7 +4,7 @@ pub fn len(s: &str) -> usize {
     Graphemes::new(s).count()
 }
 
-pub fn to_byte_offset<'a>(s: &'a str, grapheme_offset: usize) -> usize {
+pub fn to_byte_offset(s: &'_ str, grapheme_offset: usize) -> usize {
     let mut byte_offset = 0;
 
     for item in Graphemes::new(s).take(grapheme_offset) {
@@ -14,7 +14,7 @@ pub fn to_byte_offset<'a>(s: &'a str, grapheme_offset: usize) -> usize {
     byte_offset
 }
 
-pub fn split_at<'a>(s: &'a str, grapheme_offset: usize) -> (&'a str, &'a str) {
+pub fn split_at(s: &str, grapheme_offset: usize) -> (&str, &str) {
     let mut byte_offset = 0;
 
     for item in Graphemes::new(s).take(grapheme_offset) {
