@@ -28,10 +28,11 @@ impl Figlet {
     /// Writes a single character to the buffer.
     /// The length of `output` should be at least `font.height()`, however it's safe to
     /// pass a smaller slice (the rendering will be cropped).
-    /// The same number of characters will be appeneded to each string, padding with spaces if needed.
+    /// The same number of characters will be appended to each string, padding with spaces if needed.
     ///
     /// #Example
-    /// ```norun
+    /// ```
+    /// let figlet = Figlet::from_default();
     /// let mut output = figlet.create_vec();
     /// for c in "feat(client)".chars() {
     ///     figlet.write_to_buf(c, &mut output[..])
@@ -104,56 +105,49 @@ impl Default for Figlet {
 /// Takes an iterator over lines of a .flf (figlet) file, and attempts to parse
 /// it into a Font, which can be used for rendering.
 pub fn parse<'a>(mut iter: impl Iterator<Item = &'a str>) -> Option<Figlet> {
-    let header: Vec<_> = iter.next()?.split(" ").collect();
+    let header: Vec<_> = iter.next()?.split(' ').collect();
 
     let height: usize = header.get(1)?.parse().ok()?;
     let hard_blank = header.get(0)?.chars().last()?;
     let comments: usize = header.get(5)?.parse().ok()?;
 
-    let mut iter = iter.skip(comments);
-
     let mut chars: Vec<Char> = Vec::new();
     let mut current: Vec<String> = Vec::with_capacity(height);
 
-    loop {
-        match iter.next() {
-            Some(line) => {
-                let mut len = line.len();
-                for c in line.as_bytes().iter().rev() {
-                    if *c == b'@' {
-                        len -= 1;
-                    } else {
-                        break;
-                    }
-                }
-
-                if len == line.len() {
-                    // NOTE: we only care about the positional characters for now
-                    // so stop when we reach e.g. "160  NO-BREAK SPACE"
-                    break;
-                }
-                let slice = &line[0..len];
-                current.push(slice.replace(hard_blank, " "));
-
-                if current.len() == height {
-                    let width = current.iter().fold(0, |max, s| std::cmp::max(max, s.len()));
-
-                    if current.len() == height {
-                        for line in current.iter_mut() {
-                            while line.len() < width {
-                                line.push(' ');
-                            }
-                        }
-
-                        chars.push(Char {
-                            text: std::mem::replace(&mut current, Vec::with_capacity(height)),
-                            width,
-                        })
-                    }
-                }
+    for line in iter.skip(comments) {
+        let mut len = line.len();
+        for c in line.as_bytes().iter().rev() {
+            if *c == b'@' {
+                len -= 1;
+            } else {
+                break;
             }
-            None => break,
-        };
+        }
+
+        if len == line.len() {
+            // NOTE: we only care about the positional characters for now
+            // so stop when we reach e.g. "160  NO-BREAK SPACE"
+            break;
+        }
+        let slice = &line[0..len];
+        current.push(slice.replace(hard_blank, " "));
+
+        if current.len() == height {
+            let width = current.iter().fold(0, |max, s| std::cmp::max(max, s.len()));
+
+            if current.len() == height {
+                for line in current.iter_mut() {
+                    while line.len() < width {
+                        line.push(' ');
+                    }
+                }
+
+                chars.push(Char {
+                    text: std::mem::replace(&mut current, Vec::with_capacity(height)),
+                    width,
+                })
+            }
+        }
     }
 
     Some(Figlet { height, chars })
