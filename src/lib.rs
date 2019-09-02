@@ -2,6 +2,7 @@ mod color;
 mod config;
 pub mod figlet;
 pub mod prompt;
+pub mod string;
 pub mod term_buffer;
 
 pub use config::Config;
