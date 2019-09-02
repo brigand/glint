@@ -50,6 +50,17 @@ impl<'a> MessagePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
                     return MessagePromptResult::Terminate;
                 }
+                Some(InputEvent::Keyboard(KeyEvent::Ctrl('a'))) => {
+                    self.cursor.0 = 0;
+                }
+                Some(InputEvent::Keyboard(KeyEvent::Ctrl('e'))) => {
+                    let (_, y) = self.cursor;
+                    let line = self
+                        .input
+                        .get(y as usize)
+                        .expect("ctrl-e unable to find current line");
+                    self.cursor.0 = line.len() as u16;
+                }
                 Some(InputEvent::Keyboard(KeyEvent::Alt('\n')))
                 | Some(InputEvent::Keyboard(KeyEvent::Ctrl('\n'))) => {
                     self.input.push(String::new());
@@ -113,13 +124,19 @@ impl<'a> MessagePrompt<'a> {
             };
 
             let (x, y) = self.cursor;
-            buffer.push_line("Commit message (arrow keys for multiple linessadaf):");
+            let instructions = "Commit message (arrow keys for multiple lines):";
+            let divider = "-".repeat(instructions.len());
+            buffer.push_line(instructions);
+            buffer.push_line(divider);
+
+            // The offset for where the editor begins, i.e. the number of push_line calls above.
+            let editor_y = 2;
 
             for line in self.input.iter() {
                 buffer.push_line(line.to_string());
             }
 
-            buffer.set_next_cursor((x, y + 1));
+            buffer.set_next_cursor((x, y + editor_y));
             buffer.render_frame();
             buffer.flush();
         }
