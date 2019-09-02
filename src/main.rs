@@ -21,6 +21,7 @@ fn commit(args: ArgMatches, mut config: Config) {
     }
 
     let mut stage = Stage::Type;
+
     loop {
         match stage {
             Stage::Type => {
@@ -71,14 +72,33 @@ fn commit(args: ArgMatches, mut config: Config) {
             }
             Stage::Message(ty, scope) => {
                 let mut escape = false;
-
-                println!("Message ty: {}, scope: {:?}", ty, scope);
+                let message =
+                    match args.value_of("MESSAGE") {
+                        Some(message) => Some(message.to_string()),
+                        None => with_raw(|_raw| {
+                            match prompt::MessagePrompt::new(&mut config, &ty).run() {
+                                prompt::MessagePromptResult::Message(message) => Some(message),
+                                prompt::MessagePromptResult::Terminate => None,
+                                prompt::MessagePromptResult::Escape => {
+                                    escape = true;
+                                    None
+                                }
+                            }
+                        }),
+                    };
 
                 if escape {
                     stage = Stage::Scope(ty);
+
+                    continue;
                 }
 
-                return;
+                let message = match message {
+                    Some(s) => s,
+                    None => std::process::exit(1),
+                };
+
+                stage = Stage::Complete(ty, scope, message);
             }
             Stage::Complete(ty, scope, message) => {
                 println!(
