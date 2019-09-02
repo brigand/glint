@@ -72,20 +72,17 @@ fn commit(args: ArgMatches, mut config: Config) {
             }
             Stage::Message(ty, scope) => {
                 let mut escape = false;
-                let message =
-                    match args.value_of("MESSAGE") {
-                        Some(message) => Some(message.to_string()),
-                        None => with_raw(|_raw| {
-                            match prompt::MessagePrompt::new(&mut config, &ty).run() {
-                                prompt::MessagePromptResult::Message(message) => Some(message),
-                                prompt::MessagePromptResult::Terminate => None,
-                                prompt::MessagePromptResult::Escape => {
-                                    escape = true;
-                                    None
-                                }
-                            }
-                        }),
-                    };
+                let message = match args.value_of("MESSAGE") {
+                    Some(message) => Some(message.to_string()),
+                    None => with_raw(|_raw| match prompt::MessagePrompt::new(&mut config).run() {
+                        prompt::MessagePromptResult::Message(message) => Some(message),
+                        prompt::MessagePromptResult::Terminate => None,
+                        prompt::MessagePromptResult::Escape => {
+                            escape = true;
+                            None
+                        }
+                    }),
+                };
 
                 if escape {
                     stage = Stage::Scope(ty);
