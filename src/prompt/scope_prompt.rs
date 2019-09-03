@@ -9,6 +9,7 @@ pub struct ScopePrompt<'a> {
     selected_index: u16,
     ty: &'a str,
     x_offset: u16,
+    finished: bool,
 }
 
 pub enum ScopePromptResult {
@@ -25,6 +26,7 @@ impl<'a> ScopePrompt<'a> {
             selected_index: 0,
             ty,
             x_offset: 0,
+            finished: false,
         }
     }
 
@@ -54,8 +56,7 @@ impl<'a> ScopePrompt<'a> {
                     return ScopePromptResult::Terminate;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
-                    buffer.forget();
-                    return ScopePromptResult::Scope(Some(self.input).filter(|s| !s.is_empty()));
+                    self.finished = true;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
                     let accept = (c >= 'a' && c <= 'z')
@@ -116,9 +117,11 @@ impl<'a> ScopePrompt<'a> {
 
             // Insert the indicator for where input will be placed.
             // Note that
-            figlet.write_to_buf_color("-", &mut lines[..], |s| {
-                ct::style(s).with(ct::Color::Grey).to_string()
-            });
+            if !self.finished {
+                figlet.write_to_buf_color("-", &mut lines[..], |s| {
+                    ct::style(s).with(ct::Color::Grey).to_string()
+                });
+            }
 
             figlet.write_to_buf_color(&(self.input.as_str())[offset..], &mut lines[..], |s| {
                 ct::style(s).with(ct::Color::Green).to_string()
@@ -134,6 +137,11 @@ impl<'a> ScopePrompt<'a> {
             buffer.set_next_cursor((cursor_x as u16, 3));
             buffer.render_frame();
             buffer.flush();
+
+            if self.finished {
+                buffer.forget();
+                return ScopePromptResult::Scope(Some(self.input).filter(|s| !s.is_empty()));
+            }
         }
     }
 }
