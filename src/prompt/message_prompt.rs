@@ -1,3 +1,4 @@
+use crate::string::{self, to_byte_offset};
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{self as ct, InputEvent, KeyEvent};
@@ -53,7 +54,7 @@ impl<'a> MessagePrompt<'a> {
                         .input
                         .get(y as usize)
                         .expect("ctrl-e unable to find current line");
-                    self.cursor.0 = line.len() as u16;
+                    self.cursor.0 = string::len(&line) as u16;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Alt('\n')))
                 | Some(InputEvent::Keyboard(KeyEvent::Ctrl('\n'))) => {
@@ -66,7 +67,7 @@ impl<'a> MessagePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
                     let (x, y) = self.cursor;
                     let line = self.input.get_mut(y as usize).unwrap();
-                    line.insert(x as usize, c);
+                    line.insert(to_byte_offset(&line, x as usize), c);
                     self.cursor.0 += 1;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Left)) => {
@@ -95,7 +96,8 @@ impl<'a> MessagePrompt<'a> {
                     (0, y) => {
                         self.input.remove(y as usize);
                         self.cursor.1 -= 1;
-                        self.cursor.0 = self.input[self.cursor.1 as usize].len() as u16;
+                        let line = &self.input[self.cursor.1 as usize];
+                        self.cursor.0 = string::len(line) as u16;
                     }
                     (x, y) => {
                         let line = self
@@ -103,10 +105,10 @@ impl<'a> MessagePrompt<'a> {
                             .get_mut(y as usize)
                             .expect("Backspace (x, y) get line y");
 
-                        if x as usize >= line.len() {
+                        if x as usize >= string::len(line) {
                             line.pop();
                         } else {
-                            line.remove(x as usize - 1);
+                            line.remove(to_byte_offset(&line, x as usize) - 1);
                         }
                         self.cursor.0 -= 1;
                     }
