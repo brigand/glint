@@ -1,6 +1,7 @@
 mod cli;
-use clap::ArgMatches;
-use clint::{prompt, Commit, Config};
+
+use cli::Cli;
+use clint::{prompt, Commit, Config, Git};
 
 fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
     match crossterm::RawScreen::into_raw_mode() {
@@ -12,7 +13,15 @@ fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
     }
 }
 
-fn commit(args: ArgMatches, mut config: Config) {
+fn commit(params: cli::Commit, mut config: Config) {
+    let git = match Git::from_cwd() {
+        Ok(git) => git,
+        Err(err) => {
+            eprintln!("{}", err);
+            std::process::exit(1);
+        }
+    };
+
     enum Stage {
         Type,
         Scope(String),
@@ -25,8 +34,8 @@ fn commit(args: ArgMatches, mut config: Config) {
     loop {
         match stage {
             Stage::Type => {
-                let ty = match args.value_of("TYPE") {
-                    Some(ty) => Some(ty.to_string()),
+                let ty = match params.ty {
+                    Some(ref ty) => Some(ty.to_string()),
                     None => with_raw(|_raw| match prompt::TypePrompt::new(&mut config).run() {
                         prompt::TypePromptResult::Type(ty) => Some(ty),
                         prompt::TypePromptResult::Terminate => None,
@@ -44,8 +53,8 @@ fn commit(args: ArgMatches, mut config: Config) {
             Stage::Scope(ty) => {
                 let mut escape = false;
                 let scope =
-                    match args.value_of("SCOPE") {
-                        Some(scope) => Some(Some(scope.to_string())),
+                    match params.scope {
+                        Some(ref scope) => Some(Some(scope.to_string())),
                         None => with_raw(|_raw| {
                             match prompt::ScopePrompt::new(&mut config, &ty).run() {
                                 prompt::ScopePromptResult::Scope(scope) => Some(scope),
@@ -72,8 +81,8 @@ fn commit(args: ArgMatches, mut config: Config) {
             }
             Stage::Message(ty, scope) => {
                 let mut escape = false;
-                let message = match args.value_of("MESSAGE") {
-                    Some(message) => Some(message.to_string()),
+                let message = match params.message {
+                    Some(ref message) => Some(message.to_string()),
                     None => with_raw(|_raw| match prompt::MessagePrompt::new(&mut config).run() {
                         prompt::MessagePromptResult::Message(message) => Some(message),
                         prompt::MessagePromptResult::Terminate => None,
@@ -100,7 +109,28 @@ fn commit(args: ArgMatches, mut config: Config) {
             Stage::Complete(ty, scope, message) => {
                 let commit = Commit { ty, scope, message };
 
-                println!("Commit:\n{}", commit.build_message());
+                let git_message = commit.build_message();
+                match git.commit(&git_message, params.git_args).status() {
+                    Ok(status) if status.success() => println!("Commit successful."),
+                    Ok(status) => match status.code() {
+                        Some(code) => {
+                            eprintln!("Commit command failed with {}", code);
+                            std::process::exit(code);
+                        }
+                        None => {
+                            eprintln!("Commit command failed with no status. Was likely killed by another process.");
+                            std::process::exit(1);
+                        }
+                    },
+                    Err(err) => {
+                        eprintln!(
+                            "Failed to run git. This is the best error I have:\n{:?}",
+                            err
+                        );
+                        std::process::exit(1);
+                    }
+                };
+
                 return;
             }
         }
@@ -108,8 +138,12 @@ fn commit(args: ArgMatches, mut config: Config) {
 }
 
 fn main() {
-    let args = cli::parse();
+    let command = cli::parse();
     let config = Config::default();
 
-    commit(args, config);
+    match command {
+        Cli::Commit(params) => {
+            commit(params, config);
+        }
+    }
 }
