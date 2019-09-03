@@ -1,3 +1,4 @@
+use crate::color::reset_display;
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{self as ct, style, InputEvent, KeyEvent};
@@ -120,18 +121,25 @@ impl<'a> TypePrompt<'a> {
                 let prompt_post = &self.input;
                 let underscores = "_".repeat(6 - self.input.len());
                 buffer.push_line(format!(
-                    "{}{}{}",
+                    "{}{}{}{}",
                     prompt_pre,
                     style(prompt_post).with(crate::color::theme_user_input()),
                     underscores,
+                    reset_display()
                 ));
                 let x = prompt_pre.len() + prompt_post.len();
                 x as u16
             };
 
-            for ty in types {
-                let color = crate::color::clint_type_to_color(ty);
-                let line = format!("{}", style(ty.to_string()).with(color),);
+            let active = style("*").with(ct::Color::Blue).to_string();
+            for (i, ty) in types.into_iter().enumerate() {
+                let prefix = if i as u16 == self.selected_index {
+                    &active as &str
+                } else {
+                    "-"
+                };
+
+                let line = format!("{} {}{}", prefix, ty, reset_display());
                 buffer.push_line(line);
             }
 
