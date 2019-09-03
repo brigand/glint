@@ -35,7 +35,7 @@ fn get_git_args(args: &clap::ArgMatches) -> Vec<String> {
     let mut git_args = args.values_of_lossy("GIT_ARGS").unwrap_or_default();
 
     if args.is_present("all") {
-        git_args.push("-a".into());
+        git_args.insert(0, "-a".into());
     }
 
     git_args
