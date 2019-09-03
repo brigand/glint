@@ -18,9 +18,16 @@ impl Git {
   pub fn from_cwd() -> Result<Self, GitError> {
     let cwd = current_dir().map_err(GitError::Io)?;
 
-    let git_dir = cwd.join(".git");
+    let mut is_git_repo = false;
 
-    if !git_dir.is_dir() {
+    for dir in cwd.ancestors() {
+      if dir.join(".git").is_dir() {
+        is_git_repo = true;
+        break;
+      }
+    }
+
+    if !is_git_repo {
       return Err(GitError::NotGitRepo);
     }
 
