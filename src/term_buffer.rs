@@ -110,11 +110,20 @@ impl TermBuffer {
     }
 
     fn cursor_to_end(&mut self) {
-        let cursor_y = self.flushed.get_cursor().1;
+        let (cursor_x, cursor_y) = self.flushed.get_cursor();
         let height = self.flushed.len() as u16;
         let down = height.saturating_sub(cursor_y);
-        if down > 0 {
+
+        let move_down = down > 0;
+        let move_left = cursor_x > 0;
+        if move_down {
             ct::queue!(self.stdout, ct::Down(down)).unwrap();
+        }
+        if move_left {
+            ct::queue!(self.stdout, ct::Left(cursor_x)).unwrap();
+        }
+
+        if move_down || move_left {
             self.flush();
         }
     }
