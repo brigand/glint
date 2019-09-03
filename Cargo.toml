@@ -1,7 +1,7 @@
 [package]
 authors = ["Frankie Bagnardi <f.bagnardi@gmail.com>"]
 edition = "2018"
-name = "clint"
+name = "glint"
 version = "0.1.0"
 description = "a friendly tool for creating commits in the commitlint style"
 license = "MIT"

@@ -1,5 +1,5 @@
 
-clint is a friendly tool for creating commits in the [commitlint] style.
+glint is a friendly tool for creating commits in the [commitlint] style.
 
 
 [commitlint]: https://github.com/conventional-changelog/commitlint
@@ -11,10 +11,10 @@ clint is a friendly tool for creating commits in the [commitlint] style.
 This is an early release, so currently you must [install the rust toolchain first][rustup]. Then restart your shell and run the following:
 
 ```sh
-cargo install clint
+cargo install glint
 ```
 
-Assuming ~/.cargo/bin is in your PATH (which the installer does by default), you should be able to run `clint` and get usage information.
+Assuming ~/.cargo/bin is in your PATH (which the installer does by default), you should be able to run `glint` and get usage information.
 
 ## Usage
 

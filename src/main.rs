@@ -1,7 +1,7 @@
 mod cli;
 
 use cli::Cli;
-use clint::{prompt, Commit, Config, Git};
+use glint::{prompt, Commit, Config, Git};
 
 fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
     match crossterm::RawScreen::into_raw_mode() {

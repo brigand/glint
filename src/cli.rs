@@ -12,7 +12,7 @@ pub enum Cli {
 }
 
 fn get_app() -> clap::App<'static, 'static> {
-    clap_app!(clint =>
+    clap_app!(glint =>
         (version: "0.1")
         (author: "Frankie Bagnardi <f.bagnardi@gmail.com>")
         (about: "A friendly commitlint CLI. You probably want the 'commit' subcommand, or 'c' for short.")

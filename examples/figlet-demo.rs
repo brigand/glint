@@ -1,4 +1,4 @@
-use clint::figlet;
+use glint::figlet;
 use crossterm as ct;
 use std::fs::read_to_string;
 

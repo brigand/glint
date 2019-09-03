@@ -1,4 +1,4 @@
-use clint::TermBuffer;
+use glint::TermBuffer;
 
 enum Direction {
     Grow,

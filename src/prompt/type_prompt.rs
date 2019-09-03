@@ -106,7 +106,7 @@ impl<'a> TypePrompt<'a> {
             }
 
             let mut header = figlet.create_vec();
-            figlet.write_to_buf_color("<clint>", header.as_mut_slice(), |s| {
+            figlet.write_to_buf_color("<glint>", header.as_mut_slice(), |s| {
                 ct::style(s).with(ct::Color::Magenta).to_string()
             });
 
