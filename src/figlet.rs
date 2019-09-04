@@ -32,12 +32,10 @@ impl Figlet {
     ///
     /// #Example
     /// ```
-    /// let figlet = Figlet::from_default();
+    /// use glint::Figlet;
+    /// let figlet = Figlet::default();
     /// let mut output = figlet.create_vec();
-    /// for c in "feat(client)".chars() {
-    ///     figlet.write_to_buf(c, &mut output[..])
-    ///         .expect("write_to_buf should return the width");
-    /// }
+    /// figlet.write_to_buf("feat(client)", &mut output[..]);
     /// ```
     pub fn write_to_buf(&self, s: &str, output: &mut [String]) -> usize {
         self.write_to_buf_color(s, output, |s| s.to_string())
