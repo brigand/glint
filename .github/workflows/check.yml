@@ -4,10 +4,14 @@ on: [push]
 
 jobs:
   build:
-    runs-on: 
-      - ubuntu-latest
-      - windows-latest
-      - macOS-latest
+    strategy:
+      matrix:
+        platform:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+          
+    runs-on: ${{ matrix.platform }}
 
     steps:
     - uses: actions/checkout@v1
