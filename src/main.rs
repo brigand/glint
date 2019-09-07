@@ -22,6 +22,9 @@ fn commit(params: cli::Commit, mut config: Config) {
         }
     };
 
+    println!("{:?}", git.status());
+    return;
+
     enum Stage {
         Type,
         Scope(String),

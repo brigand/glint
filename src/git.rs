@@ -1,7 +1,7 @@
 use std::env::current_dir;
 use std::ffi::OsStr;
 use std::fmt;
-use std::io;
+use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
@@ -9,6 +9,24 @@ pub struct Git {
   cwd: PathBuf,
 }
 
+#[derive(Debug, Clone)]
+pub struct GitStatus(pub Vec<GitStatusItem>);
+
+#[derive(Debug, Clone)]
+pub struct GitStatusItem {
+  file: String,
+  staged: Option<GitStatusType>,
+  unstaged: Option<GitStatusType>,
+}
+
+#[derive(Debug, Clone)]
+pub enum GitStatusType {
+  Added,
+  Modified,
+  Untracked,
+}
+
+#[derive(Debug)]
 pub enum GitError {
   NotGitRepo,
   Io(io::Error),
@@ -53,6 +71,58 @@ impl Git {
     }
 
     command
+  }
+
+  pub fn status(&self) -> io::Result<GitStatus> {
+    let mut command = Command::new("git");
+
+    // Setup
+    command.current_dir(&self.cwd);
+    command.stdout(Stdio::piped());
+
+    // Args
+    command.arg("status");
+    command.arg("--porcelain");
+
+    let stdout = command
+      .spawn()?
+      .stdout
+      .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Could not capture standard output."))?;
+
+    let items = BufReader::new(stdout)
+      .lines()
+      .filter_map(|line| line.ok())
+      .filter_map(|line| {
+        let mut chars = line.chars();
+        let staged = chars.next().and_then(GitStatusType::from_char);
+        let unstaged = chars.next().and_then(GitStatusType::from_char);
+        chars.next();
+        let file: String = chars.collect();
+
+        if file.is_empty() {
+          None
+        } else {
+          Some(GitStatusItem {
+            file,
+            staged,
+            unstaged,
+          })
+        }
+      })
+      .collect();
+
+    Ok(GitStatus(items))
+  }
+}
+
+impl GitStatusType {
+  pub fn from_char(ch: char) -> Option<Self> {
+    match ch {
+      'A' => Some(GitStatusType::Added),
+      'M' => Some(GitStatusType::Modified),
+      '?' => Some(GitStatusType::Untracked),
+      _ => None,
+    }
   }
 }
 
