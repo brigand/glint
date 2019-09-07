@@ -22,10 +22,8 @@ fn commit(params: cli::Commit, mut config: Config) {
         }
     };
 
-    println!("{:?}", git.status());
-    return;
-
     enum Stage {
+        Files,
         Type,
         Scope(String),
         Message(String, Option<String>),
@@ -34,8 +32,41 @@ fn commit(params: cli::Commit, mut config: Config) {
 
     let mut stage = Stage::Type;
 
+    let mut git_status = git.status().ok();
+
+    if let Some(ref git_status) = git_status {
+        let any_staged = git_status.any_staged();
+        let any_unstaged = git_status.any_unstaged();
+
+        if !any_staged && any_unstaged {
+            if params.git_args.is_empty() {
+                stage = Stage::Files;
+            }
+        } else if !any_staged {
+            eprintln!("No changes to commit.");
+            std::process::exit(1);
+        }
+    }
+
+    let mut commit_files: Option<Vec<String>> = None;
+
     loop {
         match stage {
+            Stage::Files => {
+                commit_files = with_raw(|_raw| {
+                    match prompt::FilesPrompt::new(&mut config, git_status.take().unwrap()).run() {
+                        prompt::FilesPromptResult::Files(files) => Some(files),
+                        prompt::FilesPromptResult::Terminate => None,
+                        prompt::FilesPromptResult::Escape => None,
+                    }
+                });
+
+                if commit_files.is_none() {
+                    std::process::exit(1);
+                }
+
+                stage = Stage::Type;
+            }
             Stage::Type => {
                 let ty = match params.ty {
                     Some(ref ty) => Some(ty.to_string()),
@@ -113,7 +144,15 @@ fn commit(params: cli::Commit, mut config: Config) {
                 let commit = Commit { ty, scope, message };
 
                 let git_message = commit.build_message();
-                match git.commit(&git_message, params.git_args).status() {
+
+                let mut args = params.git_args;
+
+                if let Some(commit_files) = commit_files {
+                    args.push("--".into());
+                    args.extend(commit_files);
+                }
+
+                match git.commit(&git_message, args).status() {
                     Ok(status) if status.success() => println!("Commit successful."),
                     Ok(status) => match status.code() {
                         Some(code) => {

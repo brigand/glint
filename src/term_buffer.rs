@@ -56,6 +56,10 @@ impl TermBuffer {
         self.state.push(row);
     }
 
+    pub fn lines(&self) -> u16 {
+        self.state.len() as u16
+    }
+
     /// Positions the cursor where (0, 0) is the first character printed by this program
     pub fn set_next_cursor(&mut self, cursor: (u16, u16)) {
         self.state.set_cursor(cursor);
