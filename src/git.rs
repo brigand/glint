@@ -19,7 +19,7 @@ pub struct GitStatusItem {
   unstaged: Option<GitStatusType>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GitStatusType {
   Added,
   Modified,
@@ -94,8 +94,15 @@ impl Git {
       .filter_map(|line| line.ok())
       .filter_map(|line| {
         let mut chars = line.chars();
-        let staged = chars.next().and_then(GitStatusType::from_char);
+        let staged = chars
+          .next()
+          .and_then(GitStatusType::from_char)
+          .filter(|item| match item {
+            GitStatusType::Untracked => false,
+            _ => true,
+          });
         let unstaged = chars.next().and_then(GitStatusType::from_char);
+
         chars.next();
         let file: String = chars.collect();
 
@@ -112,6 +119,41 @@ impl Git {
       .collect();
 
     Ok(GitStatus(items))
+  }
+}
+impl GitStatus {
+  pub fn iter(&self) -> impl Iterator<Item = &GitStatusItem> {
+    self.0.iter()
+  }
+
+  pub fn any_staged(&self) -> bool {
+    self.iter().any(|item| item.staged.is_some())
+  }
+
+  pub fn any_unstaged(&self) -> bool {
+    self.iter().any(|item| item.unstaged.is_some())
+  }
+
+  pub fn len(&self) -> usize {
+    self.0.len()
+  }
+}
+
+impl GitStatusItem {
+  pub fn file(&self) -> &str {
+    &self.file
+  }
+}
+
+impl Into<String> for GitStatusItem {
+  fn into(self) -> String {
+    (&self).into()
+  }
+}
+
+impl Into<String> for &'_ GitStatusItem {
+  fn into(self) -> String {
+    self.file().into()
   }
 }
 
