@@ -54,7 +54,7 @@ fn commit(params: cli::Commit, mut config: Config) {
         match stage {
             Stage::Files => {
                 commit_files = with_raw(|_raw| {
-                    match prompt::FilesPrompt::new(&mut config, git_status.take().unwrap()).run() {
+                    match prompt::FilesPrompt::new(&mut config, git_status.clone().unwrap()).run() {
                         prompt::FilesPromptResult::Files(files) => Some(files),
                         prompt::FilesPromptResult::Terminate => None,
                         prompt::FilesPromptResult::Escape => None,
@@ -68,14 +68,24 @@ fn commit(params: cli::Commit, mut config: Config) {
                 stage = Stage::Type;
             }
             Stage::Type => {
+                let mut escape = false;
+
                 let ty = match params.ty {
                     Some(ref ty) => Some(ty.to_string()),
                     None => with_raw(|_raw| match prompt::TypePrompt::new(&mut config).run() {
                         prompt::TypePromptResult::Type(ty) => Some(ty),
                         prompt::TypePromptResult::Terminate => None,
-                        prompt::TypePromptResult::Escape => None,
+                        prompt::TypePromptResult::Escape => {
+                            escape = true;
+                            None
+                        }
                     }),
                 };
+
+                if escape && commit_files.is_some() {
+                    stage = Stage::Files;
+                    continue;
+                }
 
                 let ty = match ty {
                     Some(s) => s,
