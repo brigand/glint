@@ -32,6 +32,8 @@ It's a simple checkbox list where you use the up/down arrow keys to navigate and
 
 You may also toggle all files (even if some are hidden) by toggling the list item named "<all>".
 
+Tapping the 'd' key will show a diff of the file(s) for the highlighted line, which you can exit by pressing 'q'.
+
 Press Enter when you're ready to move to the next prompt.
 
 ### Prompt: Type
