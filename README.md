@@ -27,6 +27,13 @@ The main command is `glint commit` which you can shorten to `glint c`.
 
 If run with no other arguments, you'll receive each of the prompts in sequence.
 
+To pass extra arguments to the final `git commit` command, use `--` to mark the end of glint's arguments.
+
+```sh
+# Set the commitlint type to 'docs', and also ask git to sign the commit
+glint commit -t docs -- -S
+```
+
 ### Prompt: Files
 
 The first prompt allows you to select files to add to the commit. It will only appear if no files are already staged (e.g. by using `git add` before running glint).
@@ -68,6 +75,3 @@ There are a few extra features (and this will likely increase in the future):
 - Arrow keys to navigate, including navigating to positions where there's no text (e.g. pressing down will insert a new line)
 
 When you're satisfied with your commit message, press Enter to submit it and finalize the commit. You may press Escape to return to the Scope prompt.
-
-
-
