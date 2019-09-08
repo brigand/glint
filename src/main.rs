@@ -32,7 +32,7 @@ fn commit(params: cli::Commit, mut config: Config) {
 
     let mut stage = Stage::Type;
 
-    let mut git_status = git.status().ok();
+    let git_status = git.status().ok();
 
     if let Some(ref git_status) = git_status {
         let any_staged = git_status.any_staged();

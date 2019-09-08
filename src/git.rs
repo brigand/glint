@@ -24,6 +24,7 @@ pub enum GitStatusType {
   Added,
   Modified,
   Untracked,
+  Deleted,
 }
 
 #[derive(Debug)]
@@ -162,6 +163,7 @@ impl GitStatusType {
     match ch {
       'A' => Some(GitStatusType::Added),
       'M' => Some(GitStatusType::Modified),
+      'D' => Some(GitStatusType::Deleted),
       '?' => Some(GitStatusType::Untracked),
       _ => None,
     }
