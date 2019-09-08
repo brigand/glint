@@ -1,4 +1,4 @@
-name: Test
+name: Test/Build
 
 on: [push, pull_request]
 
@@ -17,3 +17,13 @@ jobs:
     - uses: actions/checkout@master
     - name: Run tests
       run: cargo test --verbose
+    - name: Release build
+      run:
+        - cargo build --release
+        - mkdir -p artifacts/glint-${{ matrix.os }}
+        - cp target/release/glint artifacts/glint-${{ matrix.os }}
+    - uses: actions/upload-artifact@master
+      with:
+        name: glint-${{ matrix.os }}
+        path: artifacts/glint-${{ matrix.os }}
+
