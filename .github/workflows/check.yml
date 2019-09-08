@@ -7,7 +7,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          # - windows-latest
         rust: [stable, nightly]
 
     steps:
@@ -21,8 +24,8 @@ jobs:
       run: cargo build --release
     - name: Prepare artifact
       run: |
-        mkdir -p artifacts/glint-${{ matrix.os }};
-        cp target/release/glint artifacts/glint-${{ matrix.os }};
+        mkdir -p artifacts/glint-${{ matrix.os }}
+        cp target/release/glint* artifacts/glint-${{ matrix.os }}
     - uses: actions/upload-artifact@master
       with:
         name: glint-${{ matrix.os }}
