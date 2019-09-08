@@ -1,4 +1,4 @@
-use crate::string::{self, to_byte_offset};
+use crate::string::{self, next_word_grapheme, prev_word_grapheme, to_byte_offset};
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{self as ct, InputEvent, KeyEvent};
@@ -81,14 +81,17 @@ impl<'a> MessagePrompt<'a> {
                     }
                     self.cursor.0 += 1;
                 }
-
-                Some(InputEvent::Keyboard(KeyEvent::Right)) => {
+                // Alt-Left
+                Some(InputEvent::Keyboard(KeyEvent::Alt('b'))) => {
                     let (x, y) = self.cursor;
-                    let line = self.input.get_mut(y as usize).expect("KE::Right get_mut");
-                    if line.len() < x as usize + 1 {
-                        line.push(' ');
-                    }
-                    self.cursor.0 += 1;
+                    let line = &self.input.get(y as usize).expect("current line must exist");
+                    self.cursor.0 = prev_word_grapheme(line, x as usize) as u16;
+                }
+                // Alt-Right
+                Some(InputEvent::Keyboard(KeyEvent::Alt('f'))) => {
+                    let (x, y) = self.cursor;
+                    let line = &self.input.get(y as usize).expect("current line must exist");
+                    self.cursor.0 = next_word_grapheme(line, x as usize) as u16;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Up)) => {
                     self.cursor.1 = self.cursor.1.saturating_sub(1);
