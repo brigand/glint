@@ -8,7 +8,9 @@ glint is a friendly tool for creating commits in the [commitlint] style.
 
 ## Install
 
-This is an early release, so currently you must [install the rust toolchain first][rustup]. Then restart your shell and run the following:
+You can download OSX and Linux binaries from the [releases] page. Copy the binary to somewhere in your PATH, and ensure it's executable. Windows support is planned.
+
+Alternatively [install the rust toolchain][rustup], restart your shell, and run the following:
 
 ```sh
 cargo install glint
@@ -16,6 +18,7 @@ cargo install glint
 
 Assuming ~/.cargo/bin is in your PATH (which the installer does by default), you should be able to run `glint` and get usage information.
 
+[releases]: https://github.com/brigand/glint/releases
 [rustup]: https://rustup.rs/
 
 ## Usage
