@@ -115,9 +115,15 @@ impl<'a> FilesPrompt<'a> {
 
       let selected_color = style("").with(ct::Color::Blue).to_string();
 
+      // Padded limit (never overflows by 1 item)
+      let total = self.options.len();
+      let max = 15;
+      let take = if total > max { max - 3 } else { total };
+
       for (i, label) in iter::once("<all>")
         .chain(self.options.iter().map(|item| item.file()))
         .enumerate()
+        .take(take + 1)
       {
         let color = if i as u16 == self.selected_index {
           &selected_color as &str
@@ -134,6 +140,11 @@ impl<'a> FilesPrompt<'a> {
 
         let line = format!("{}{} {}{}", color, prefix, label, reset_display());
         buffer.push_line(line);
+      }
+
+      if take < total {
+        let diff = total - take;
+        buffer.push_line(format!("and {} more", diff));
       }
 
       buffer.set_next_cursor((0, y_offset));
