@@ -81,6 +81,15 @@ impl<'a> MessagePrompt<'a> {
                     }
                     self.cursor.0 += 1;
                 }
+
+                Some(InputEvent::Keyboard(KeyEvent::Right)) => {
+                    let (x, y) = self.cursor;
+                    let line = self.input.get_mut(y as usize).expect("KE::Right get_mut");
+                    if line.len() < x as usize + 1 {
+                        line.push(' ');
+                    }
+                    self.cursor.0 += 1;
+                }
                 Some(InputEvent::Keyboard(KeyEvent::Up)) => {
                     self.cursor.1 = self.cursor.1.saturating_sub(1);
                 }

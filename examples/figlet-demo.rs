@@ -1,5 +1,5 @@
-use glint::figlet;
 use crossterm as ct;
+use glint::figlet;
 use std::fs::read_to_string;
 
 pub fn main() {

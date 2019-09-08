@@ -1,19 +1,19 @@
 use crossterm::{self as ct, Color};
 
 pub fn reset() -> Color {
-  Color::Reset
+    Color::Reset
 }
 
 pub fn reset_display() -> ct::StyledObject<&'static str> {
-  ct::style("").with(Color::Reset)
+    ct::style("").with(Color::Reset)
 }
 
 pub fn reset_item() -> ct::Output {
-  ct::Output(ct::style("").with(reset()).on(reset()).to_string())
+    ct::Output(ct::style("").with(reset()).on(reset()).to_string())
 }
 
 pub fn theme_user_input() -> Color {
-  Color::Blue
+    Color::Blue
 }
 
 // pub fn glint_type_to_color(ty: &str) -> Color {
