@@ -3,6 +3,7 @@ use crate::git::GitStatus;
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{self as ct, style, InputEvent, KeyEvent};
+use std::iter;
 
 #[derive(Debug)]
 pub struct FilesPrompt<'a> {
@@ -54,7 +55,15 @@ impl<'a> FilesPrompt<'a> {
         }
         Some(InputEvent::Keyboard(KeyEvent::Char(' '))) => {
           let index = self.selected_index as usize;
-          self.checked[index] = !self.checked[index];
+          if index == 0 {
+            let set_to = !self.checked.iter().all(|&x| x);
+
+            for item in self.checked.iter_mut() {
+              *item = set_to;
+            }
+          } else {
+            self.checked[index - 1] = !self.checked[index - 1];
+          }
         }
         Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
           let selected = self
@@ -77,7 +86,7 @@ impl<'a> FilesPrompt<'a> {
           };
         }
         Some(InputEvent::Keyboard(KeyEvent::Down)) => {
-          let total = self.options.len() as u16;
+          let total = self.options.len() as u16 + 1;
 
           self.selected_index += 1;
           if self.selected_index >= total {
@@ -105,16 +114,25 @@ impl<'a> FilesPrompt<'a> {
       let y_offset = buffer.lines() + self.selected_index;
 
       let selected_color = style("").with(ct::Color::Blue).to_string();
-      for (i, item) in self.options.iter().enumerate() {
+
+      for (i, label) in iter::once("<all>")
+        .chain(self.options.iter().map(|item| item.file()))
+        .enumerate()
+      {
         let color = if i as u16 == self.selected_index {
           &selected_color as &str
         } else {
           ""
         };
 
-        let prefix = if self.checked[i] { "☑" } else { "□" };
+        let checked = if i == 0 {
+          self.checked.iter().all(|&x| x)
+        } else {
+          self.checked[i - 1]
+        };
+        let prefix = if checked { "☑" } else { "□" };
 
-        let line = format!("{}{} {}{}", color, prefix, item.file(), reset_display());
+        let line = format!("{}{} {}{}", color, prefix, label, reset_display());
         buffer.push_line(line);
       }
 
