@@ -5,6 +5,7 @@ use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+#[derive(Debug, Clone)]
 pub struct Git {
     cwd: PathBuf,
     repo_root: PathBuf,
@@ -95,6 +96,29 @@ impl Git {
         }
 
         command
+    }
+
+    pub fn diff_less<I>(&self, files: impl IntoIterator<Item = I>) -> io::Result<()>
+    where
+        I: AsRef<OsStr>,
+    {
+        let diff = Command::new("git")
+            .current_dir(&self.repo_root)
+            .arg("diff")
+            .arg("--color=always")
+            .arg("--")
+            .args(files.into_iter())
+            .stdout(Stdio::piped())
+            .spawn()?;
+
+        Command::new("less")
+            .current_dir(&self.repo_root)
+            .stdin(diff.stdout.ok_or_else(|| {
+                io::Error::new(io::ErrorKind::Other, "failed to get stdout of git diff")
+            })?)
+            .status()?;
+
+        Ok(())
     }
 
     pub fn status(&self) -> io::Result<GitStatus> {

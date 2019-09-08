@@ -1,5 +1,5 @@
 use crate::color::reset_display;
-use crate::git::GitStatus;
+use crate::git::{Git, GitStatus};
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{self as ct, style, InputEvent, KeyEvent};
@@ -11,6 +11,7 @@ pub struct FilesPrompt<'a> {
     checked: Vec<bool>,
     selected_index: u16,
     options: GitStatus,
+    git: &'a Git,
 }
 
 pub enum FilesPromptResult {
@@ -20,12 +21,13 @@ pub enum FilesPromptResult {
 }
 
 impl<'a> FilesPrompt<'a> {
-    pub fn new(config: &'a mut Config, options: GitStatus) -> Self {
+    pub fn new(config: &'a mut Config, git: &'a Git, options: GitStatus) -> Self {
         FilesPrompt {
             config,
             checked: (0..options.len()).map(|_| false).collect(),
             selected_index: 0,
             options,
+            git,
         }
     }
 
@@ -64,6 +66,21 @@ impl<'a> FilesPrompt<'a> {
                     } else {
                         self.checked[index - 1] = !self.checked[index - 1];
                     }
+                }
+                Some(InputEvent::Keyboard(KeyEvent::Char('d'))) => {
+                    let index = self.selected_index as usize;
+                    let files = if index == 0 {
+                        vec![]
+                    } else {
+                        let option = self
+                            .options
+                            .iter()
+                            .nth(index - 1)
+                            .expect("diff should match a file");
+                        vec![option.file().to_string()]
+                    };
+
+                    let _r = self.git.diff_less(files);
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
                     let selected = self
@@ -105,7 +122,7 @@ impl<'a> FilesPrompt<'a> {
                 buffer.push_line(line);
             }
 
-            let prompt_pre = "Toggle files to commit (with <space>):";
+            let prompt_pre = "Toggle files to commit (with <space>, or tap 'd' for diff):";
             let underscores = "-".repeat(prompt_pre.len());
             buffer.push_line("");
             buffer.push_line(prompt_pre);

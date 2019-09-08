@@ -6,13 +6,15 @@ version = "0.1.3"
 description = "a friendly tool for creating commits in the commitlint style"
 homepage="https://github.com/brigand/glint"
 repository="https://github.com/brigand/glint"
-docs="https://docs.rs/glint"
+documentation="https://docs.rs/glint"
 license = "MIT"
 
 [dependencies]
 clap = "2"
 crossterm = "0.10"
 unic-segment = "0.9"
+# Considering using this for `git diff`
+# cursive-multiplex = "^0.2.0"
 
 [profile.release]
 lto = true
