@@ -1,0 +1,10 @@
+#!/bin/bash
+
+rm -rf release-files
+mkdir release-files
+
+cargo build --release
+cross build --release --target x86_64-unknown-linux-gnu
+
+cp target/x86_64-unknown-linux-gnu/release/glint release-files/glint-linux-x86-64
+cp target/release/glint release-files/glint-osx-x86-64
