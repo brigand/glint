@@ -7,6 +7,7 @@ use std::process::{Command, Stdio};
 
 pub struct Git {
   cwd: PathBuf,
+  repo_root: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -37,20 +38,20 @@ impl Git {
   pub fn from_cwd() -> Result<Self, GitError> {
     let cwd = current_dir().map_err(GitError::Io)?;
 
-    let mut is_git_repo = false;
+    let mut repo_root = None;
 
     for dir in cwd.ancestors() {
       if dir.join(".git").is_dir() {
-        is_git_repo = true;
+        repo_root = Some(dir.into());
+
         break;
       }
     }
 
-    if !is_git_repo {
-      return Err(GitError::NotGitRepo);
+    match repo_root {
+      Some(repo_root) => Ok(Git { cwd, repo_root }),
+      None => Err(GitError::NotGitRepo),
     }
-
-    Ok(Git { cwd })
   }
 
   pub fn commit<I>(&self, message: &str, other_args: impl IntoIterator<Item = I>) -> Command
@@ -69,6 +70,28 @@ impl Git {
     command.arg(message);
     for arg in other_args {
       command.arg(arg);
+    }
+
+    command
+  }
+
+  /// Stages files using `git add`. Run from the repo root.
+  pub fn add<I>(&self, files: impl IntoIterator<Item = I>) -> Command
+  where
+    I: AsRef<OsStr>,
+  {
+    let mut command = Command::new("git");
+
+    // Setup
+    command.current_dir(&self.repo_root);
+    command.stdin(Stdio::null());
+
+    // Args
+    command.arg("add");
+    command.arg("--");
+
+    for file in files {
+      command.arg(file.as_ref());
     }
 
     command

@@ -151,16 +151,15 @@ fn commit(params: cli::Commit, mut config: Config) {
                 stage = Stage::Complete(ty, scope, message);
             }
             Stage::Complete(ty, scope, message) => {
+                if let Some(commit_files) = commit_files {
+                    git.add(commit_files).status();
+                }
+
                 let commit = Commit { ty, scope, message };
 
                 let git_message = commit.build_message();
 
                 let mut args = params.git_args;
-
-                if let Some(commit_files) = commit_files {
-                    args.push("--".into());
-                    args.extend(commit_files);
-                }
 
                 match git.commit(&git_message, args).status() {
                     Ok(status) if status.success() => println!("Commit successful."),
