@@ -75,7 +75,7 @@ impl Git {
     command
   }
 
-  /// Stages files using `git add`. Run from the repo root.
+  /// Stages files using `git add`. Run from the repo root.gs
   pub fn add<I>(&self, files: impl IntoIterator<Item = I>) -> Command
   where
     I: AsRef<OsStr>,
