@@ -112,6 +112,7 @@ impl Git {
             .spawn()?;
 
         Command::new("less")
+            .arg("-R")
             .current_dir(&self.repo_root)
             .stdin(diff.stdout.ok_or_else(|| {
                 io::Error::new(io::ErrorKind::Other, "failed to get stdout of git diff")
