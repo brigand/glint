@@ -17,7 +17,7 @@ pub struct TermBuffer {
 
     // Cache some structs
     // terminal: ct::Terminal,
-    stdout: io::Stdout,
+    stdout: io::Stderr,
 }
 
 impl Drop for TermBuffer {
@@ -47,7 +47,7 @@ impl TermBuffer {
 
             // Cache some structs
             // terminal: ct::terminal(),
-            stdout: io::stdout(),
+            stdout: io::stderr(),
         }
     }
 
@@ -75,6 +75,7 @@ impl TermBuffer {
         self.flushed = Default::default();
     }
 
+    /// Renders a complete frame to the terminal
     pub fn render_frame(&mut self) {
         self.cursor_to_start();
         self.queue_clear();
