@@ -99,6 +99,8 @@ impl<'a> ScopePrompt<'a> {
                 _ => {}
             };
 
+            let (term_width, _) = ct::terminal().terminal_size();
+
             let mut lines = figlet.create_vec();
 
             let mut cursor_x = 0;
@@ -115,26 +117,58 @@ impl<'a> ScopePrompt<'a> {
                     ct::style(s).with(ct::Color::Green).to_string()
                 });
 
+            let mut fig_width = cursor_x;
+
             // Insert the indicator for where input will be placed.
             // Note that
             if !self.finished {
-                figlet.write_to_buf_color("-", &mut lines[..], |s| {
+                fig_width += figlet.write_to_buf_color("-", &mut lines[..], |s| {
                     ct::style(s).with(ct::Color::Grey).to_string()
                 });
             }
 
-            figlet.write_to_buf_color(&(self.input.as_str())[offset..], &mut lines[..], |s| {
-                ct::style(s).with(ct::Color::Green).to_string()
-            });
-            figlet.write_to_buf_color(")", &mut lines[..], |s| {
+            fig_width +=
+                figlet.write_to_buf_color(&(self.input.as_str())[offset..], &mut lines[..], |s| {
+                    ct::style(s).with(ct::Color::Green).to_string()
+                });
+            fig_width += figlet.write_to_buf_color(")", &mut lines[..], |s| {
                 ct::style(s).with(ct::Color::Grey).to_string()
             });
+
+            // We're tracking the printed width above to see if we've run out of space here.
+            let figlet_overflows = fig_width + 1 > term_width as usize;
+
+            let cursor_y = if figlet_overflows { 1 } else { 3 };
+
+            // If we did overflow, then for now we should display it as a single line with one line of padding above/below
+            if figlet_overflows {
+                use std::fmt::Write;
+
+                lines = vec!["".into(), "".into(), "".into()];
+                let line = &mut lines[1];
+
+                write!(line, "{}", ct::style(&self.ty).with(ct::Color::Blue)).unwrap();
+                write!(line, "{}", ct::style("(").with(ct::Color::Grey)).unwrap();
+                write!(
+                    line,
+                    "{}",
+                    ct::style(&(self.input.as_str())[0..offset]).with(ct::Color::Green)
+                )
+                .unwrap();
+
+                if !self.finished {
+                    write!(line, "{}", ct::style("_").with(ct::Color::Grey)).unwrap();
+                }
+                write!(line, "{}", ct::style(")").with(ct::Color::Grey)).unwrap();
+
+                cursor_x = self.ty.len() + 1 + self.input.len();
+            }
 
             for line in lines {
                 buffer.push_line(line);
             }
 
-            buffer.set_next_cursor((cursor_x as u16, 3));
+            buffer.set_next_cursor((cursor_x as u16, cursor_y));
             buffer.render_frame();
             buffer.flush();
 
