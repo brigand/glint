@@ -14,6 +14,16 @@ pub fn to_byte_offset(s: &'_ str, grapheme_offset: usize) -> usize {
     byte_offset
 }
 
+pub fn to_byte_offset_end(s: &'_ str, grapheme_offset: usize) -> usize {
+    let mut byte_offset = 0;
+
+    for item in Graphemes::new(s).take(grapheme_offset ) {
+        byte_offset += item.len();
+    }
+
+    byte_offset
+}
+
 // pub fn get_at(s: &'_ str, grapheme_offset: usize) -> Option<&str> {
 //     Graphemes::new(s).nth(grapheme_offset)
 // }

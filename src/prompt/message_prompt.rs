@@ -103,6 +103,26 @@ impl<'a> MessagePrompt<'a> {
                     }
                     self.cursor = (0, y + 1);
                 }
+                // Alt-Backspace deletes a word.
+                Some(InputEvent::Keyboard(KeyEvent::Alt('\u{7f}'))) => match self.cursor {
+                    (0, 0) => {}
+                    (0, y) => {
+                        self.input.remove(y as usize);
+                        self.cursor.1 -= 1;
+                        let line = &self.input[self.cursor.1 as usize];
+                        self.cursor.0 = string::len(line) as u16;
+                    }
+                    (x, y) => {
+                        let line = self
+                            .input
+                            .get_mut(y as usize)
+                            .expect("Alt-Backspace (x, y) get line y");
+                        let end = to_byte_offset(line, x as usize + 1);
+                        let start = to_byte_offset(line, prev_word_grapheme(line, x as usize));
+                        line.replace_range(start..end, "");
+                        self.cursor.0 = (start) as u16;
+                    }
+                },
                 Some(InputEvent::Keyboard(KeyEvent::Backspace)) => match self.cursor {
                     (0, 0) => {}
                     (0, y) => {
