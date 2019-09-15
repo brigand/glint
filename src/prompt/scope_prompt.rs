@@ -111,9 +111,14 @@ impl<'a> ScopePrompt<'a> {
             cursor_x += figlet.write_to_buf_color(&self.ty, &mut lines[..], |s| {
                 ct::style(s).with(ct::Color::Blue).to_string()
             });
-            cursor_x += figlet.write_to_buf_color("(", &mut lines[..], |s| {
-                ct::style(s).with(ct::Color::Grey).to_string()
-            });
+
+            let show_parens = !self.finished || !self.input.is_empty();
+
+            if show_parens {
+                cursor_x += figlet.write_to_buf_color("(", &mut lines[..], |s| {
+                    ct::style(s).with(ct::Color::Grey).to_string()
+                });
+            }
 
             let offset = self.x_offset as usize;
             cursor_x +=
@@ -135,9 +140,16 @@ impl<'a> ScopePrompt<'a> {
                 figlet.write_to_buf_color(&(self.input.as_str())[offset..], &mut lines[..], |s| {
                     ct::style(s).with(ct::Color::Green).to_string()
                 });
-            fig_width += figlet.write_to_buf_color(")", &mut lines[..], |s| {
-                ct::style(s).with(ct::Color::Grey).to_string()
-            });
+
+            if show_parens {
+                fig_width += figlet.write_to_buf_color(")", &mut lines[..], |s| {
+                    ct::style(s).with(ct::Color::Grey).to_string()
+                });
+            } else {
+                fig_width += figlet.write_to_buf_color(":", &mut lines[..], |s| {
+                    ct::style(s).with(ct::Color::Grey).to_string()
+                });
+            }
 
             // We're tracking the printed width above to see if we've run out of space here.
             let figlet_overflows = fig_width + 1 > term_width as usize;
