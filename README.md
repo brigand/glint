@@ -1,8 +1,8 @@
 
-glint is a friendly tool for creating commits in the [commitlint] style.
+glint is a friendly tool for creating commits in the [conventional] style.
 
 
-[commitlint]: https://github.com/conventional-changelog/commitlint
+[conventional]: https://www.conventionalcommits.org/en/v1.0.0-beta.4/
 
 ![screen recording of usage](./assets/usage.gif)
 
@@ -23,6 +23,17 @@ Assuming ~/.cargo/bin is in your PATH (which the installer does by default), you
 
 [releases]: https://github.com/brigand/glint/releases
 [rustup]: https://rustup.rs/
+
+## Updating
+
+To get a newer version, download it from the [releases] page and use `which glint` to see where you saved it previously. Simply replace
+the binary with the new version.
+
+If you installed with cargo then updating is easier:
+
+```sh
+cargo install glint --force
+```
 
 ## Usage
 
