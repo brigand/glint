@@ -48,7 +48,10 @@ impl<'a> FilesPrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                sync_stdin.next()
+                match sync_stdin.next() {
+                    Some(e) => Some(e),
+                    _ => continue,
+                }
             };
 
             match event {
@@ -110,7 +113,8 @@ impl<'a> FilesPrompt<'a> {
                         self.selected_index = total.saturating_sub(1);
                     }
                 }
-                _ => {}
+                None => {}
+                _ => continue,
             };
 
             let mut header = figlet.create_vec();

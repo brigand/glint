@@ -38,7 +38,10 @@ impl<'a> MessagePrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                sync_stdin.next()
+                match sync_stdin.next() {
+                    Some(e) => Some(e),
+                    _ => continue
+                }
             };
 
             match event {
@@ -148,7 +151,8 @@ impl<'a> MessagePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
                     return MessagePromptResult::Escape;
                 }
-                _ => {}
+                None => {},
+                _ => continue
             };
 
             let (x, y) = self.cursor;

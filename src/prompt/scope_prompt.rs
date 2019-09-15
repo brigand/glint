@@ -48,7 +48,10 @@ impl<'a> ScopePrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                sync_stdin.next()
+                match sync_stdin.next() {
+                    Some(e) => Some(e),
+                    _ => continue,
+                }
             };
 
             match event {
@@ -96,7 +99,8 @@ impl<'a> ScopePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
                     return ScopePromptResult::Escape;
                 }
-                _ => {}
+                None => {}
+                _ => continue,
             };
 
             let (term_width, _) = ct::terminal().terminal_size();

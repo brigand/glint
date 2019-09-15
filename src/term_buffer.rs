@@ -158,6 +158,12 @@ struct State {
     first_row: u16,
 }
 
+impl PartialEq for State {
+    fn eq(&self, other: &Self) -> bool {
+        self.cursor == other.cursor && self.rows == other.rows
+    }
+}
+
 impl Default for State {
     fn default() -> Self {
         State {
