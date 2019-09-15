@@ -1,0 +1,22 @@
+# https://github.com/marketplace/actions/release-drafter
+template: |
+  ## What’s Changed
+
+  $CHANGES
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feat'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+  - title: '🧰 Maintenance'
+    label:
+      - 'chore'
+      - 'ci'
+      - 'refactor'
+      - 'style'
+      - 'test'
+      - 'perf'
