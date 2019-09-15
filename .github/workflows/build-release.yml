@@ -1,0 +1,25 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: macOS-latest
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: stable
+    - uses: actions/checkout@master
+    - name: Install tools
+      run: brew install gnu-tar
+    - name: Release build
+      run: ./scripts/build-release
+    - name: Prepare artifacts
+      run: |
+        mkdir -p artifacts
+        gtar czf artifacts/glint.tgz release-files/*.tgz
+    - uses: actions/upload-artifact@master
+      with:
+        name: glint
+        path: artifacts/
+
