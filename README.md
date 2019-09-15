@@ -8,7 +8,10 @@ glint is a friendly tool for creating commits in the [commitlint] style.
 
 ## Install
 
-You can download OSX and Linux binaries from the [releases] page. Copy the binary to somewhere in your PATH, and ensure it's executable.
+You can download OSX, Linux, and Windows binaries from the [releases] page. The archives have a file named 'glint' or 'glint.exe' which
+you should place somewhere covered by your PATH.
+
+Note: Windows binaries have only been tested in cmd.exe on Windows 10.
 
 Alternatively [install the rust toolchain][rustup], restart your shell, and run the following:
 
