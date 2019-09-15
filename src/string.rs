@@ -17,7 +17,7 @@ pub fn to_byte_offset(s: &'_ str, grapheme_offset: usize) -> usize {
 pub fn to_byte_offset_end(s: &'_ str, grapheme_offset: usize) -> usize {
     let mut byte_offset = 0;
 
-    for item in Graphemes::new(s).take(grapheme_offset ) {
+    for item in Graphemes::new(s).take(grapheme_offset) {
         byte_offset += item.len();
     }
 

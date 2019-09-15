@@ -55,7 +55,9 @@ fn commit(params: cli::Commit, mut config: Config) {
         match stage {
             Stage::Files => {
                 commit_files = with_raw(|_raw| {
-                    match prompt::FilesPrompt::new(&mut config, &git, git_status.clone().unwrap()).run() {
+                    match prompt::FilesPrompt::new(&mut config, &git, git_status.clone().unwrap())
+                        .run()
+                    {
                         prompt::FilesPromptResult::Files(files) => Some(files),
                         prompt::FilesPromptResult::Terminate => None,
                         prompt::FilesPromptResult::Escape => None,
