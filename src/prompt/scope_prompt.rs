@@ -145,11 +145,11 @@ impl<'a> ScopePrompt<'a> {
                 fig_width += figlet.write_to_buf_color(")", &mut lines[..], |s| {
                     ct::style(s).with(ct::Color::Grey).to_string()
                 });
-            } else {
-                fig_width += figlet.write_to_buf_color(":", &mut lines[..], |s| {
-                    ct::style(s).with(ct::Color::Grey).to_string()
-                });
             }
+
+            fig_width += figlet.write_to_buf_color(":", &mut lines[..], |s| {
+                ct::style(s).with(ct::Color::Grey).to_string()
+            });
 
             // We're tracking the printed width above to see if we've run out of space here.
             let figlet_overflows = fig_width + 1 > term_width as usize;
