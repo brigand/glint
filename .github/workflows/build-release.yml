@@ -11,7 +11,9 @@ jobs:
         rust-version: stable
     - uses: actions/checkout@master
     - name: Install tools
-      run: brew install gnu-tar
+      run: |
+        brew install gnu-tar
+        cargo install cross
     - name: Release build
       run: ./scripts/build-release
     - name: Prepare artifacts
