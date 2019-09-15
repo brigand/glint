@@ -69,7 +69,10 @@ impl<'a> TypePrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                sync_stdin.next()
+                match sync_stdin.next() {
+                    Some(e) => Some(e),
+                    _ => continue,
+                }
             };
 
             match event {
@@ -89,15 +92,13 @@ impl<'a> TypePrompt<'a> {
                     return TypePromptResult::Escape;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Up)) => {
-                    self.selected_index = match self.selected_index {
-                        0 => 0,
-                        x => x + 1,
-                    };
+                    self.selected_index = self.selected_index.saturating_sub(1);
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Down)) => {
                     self.selected_index += 1;
                 }
-                _ => {}
+                None => {}
+                _ => continue,
             };
 
             let types = self.filter_types();
