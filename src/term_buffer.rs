@@ -1,6 +1,10 @@
 use crossterm as ct;
 use std::io::{self, Write as _W};
 
+// If the number of changed lines is larger than this, then
+// we do a full paint.
+const MAX_PATCH_LINES: usize = 3;
+
 /// Represents a range of lines in a terminal and the cursor position. This is
 /// suitable when you don't want to use an "alternate screen", but rather retain
 /// previous terminal output, such as shell prompts/responses.
@@ -75,8 +79,73 @@ impl TermBuffer {
         self.flushed = Default::default();
     }
 
-    /// Renders a complete frame to the terminal
+    /// Perform the necessary update to the terminal. This may choose a more
+    /// optimized update than a full frame.
     pub fn render_frame(&mut self) {
+        let same_line_count = self.state.len() == self.flushed.len();
+
+        if !same_line_count {
+            return self.render_full();
+        }
+
+        let changed_lines: Vec<_> = self
+            .state
+            .iter()
+            .zip(self.flushed.iter())
+            .enumerate()
+            .filter_map(|(i, (a, b))| if a == b { None } else { Some(i) })
+            .collect();
+
+        if !changed_lines.is_empty() && changed_lines.len() <= MAX_PATCH_LINES {
+            for line_num in changed_lines {
+                self.render_one_line(line_num);
+            }
+            self.flushed = self.state.reset();
+        } else {
+            self.render_full();
+        }
+    }
+
+    fn queue_move_cursor_y(&mut self, down: isize) {
+        if down > 0 {
+            let down = down as u16;
+            ct::queue!(self.stdout, ct::Down(down), ct::Left(1000)).unwrap();
+        } else if down < 0 {
+            let up = (-down) as u16;
+            ct::queue!(self.stdout, ct::Up(up), ct::Left(1000)).unwrap();
+        } else {
+            ct::queue!(self.stdout, ct::Left(1000)).unwrap();
+        }
+    }
+
+    pub fn render_one_line(&mut self, line_index: usize) {
+        let down = line_index as isize - self.flushed.cursor.1 as isize;
+
+        let state = self.state.clone();
+
+        self.queue_move_cursor_y(down);
+        let new_y = (self.flushed.cursor.1 as isize + down) as u16;
+
+        let (dx, dy) = state.cursor;
+
+        ct::queue!(self.stdout, ct::Clear(ct::ClearType::UntilNewLine)).unwrap();
+
+        ct::queue!(self.stdout, ct::Output(state.rows[line_index].to_string())).unwrap();
+
+        // This can be enabled to track which lines are updated
+        // ct::queue!(self.stdout, ct::Output(" ø".to_string())).unwrap();
+
+        ct::queue!(self.stdout, ct::Left(1000)).unwrap();
+
+        self.queue_move_cursor_y(dy as isize - new_y as isize);
+        if dx > 0 {
+            ct::queue!(self.stdout, ct::Right(dx)).unwrap();
+        }
+        self.flushed.cursor = (0, dy);
+    }
+
+    /// Renders a complete frame to the terminal
+    pub fn render_full(&mut self) {
         self.cursor_to_start();
         self.queue_clear();
 
@@ -193,5 +262,9 @@ impl State {
 
     pub fn reset(&mut self) -> Self {
         std::mem::replace(self, State::default())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &str> {
+        self.rows.iter().map(|s| s.as_str())
     }
 }
