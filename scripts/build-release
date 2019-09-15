@@ -1,10 +1,69 @@
 #!/bin/bash
 
+if [[ "$OSTYPE" != "" && "$OSTYPE" != "darwin"* ]]; then
+  echo "This script must be run on OSX" >&2
+  exit 1
+fi
+
+if ! command -v cross > /dev/null; then
+  echo "Please install cross before running" >&2
+  echo "    cargo install cross" >&2
+  exit 1
+fi
+
+if ! command -v gtar > /dev/null; then
+  echo "Please install gnu-tar before running" >&2
+  echo "    brew install gnu-tar" >&2
+  exit 1
+fi
+
 rm -rf release-files
 mkdir release-files
 
-cargo build --release
-cross build --release --target x86_64-unknown-linux-gnu
+function archive {
+  gtar --transform='flags=r;s|glint-[^.]*|glint|' -czf "release-files/$p_out_name.tgz" "release-files/$p_out_name$p_suffix"
+}
 
-cp target/x86_64-unknown-linux-gnu/release/glint release-files/glint-linux-x86-64
-cp target/release/glint release-files/glint-osx-x86-64
+function perform_build {
+  local target="$1"
+  p_suffix=""
+  p_out_name=""
+
+  echo ">>> Building for $target"
+
+  if [[ "$target" == "x86_64-unknown-linux-gnu" ]]; then
+    p_out_name="glint-linux-x86-64"
+    cross build --release --target "$target"
+    cp "target/$target/release/glint" "release-files/$p_out_name"
+  elif [[ "$target" == "x86_64-pc-windows-gnu" ]]; then
+    p_out_name="glint-windows-x86-64"
+    p_suffix=".exe"
+    cross build --release --target "$target"
+    cp "target/$target/release/glint$p_suffix" "release-files/$p_out_name$p_suffix"
+  elif [[ "$target" == "darwin" ]]; then
+    p_out_name="glint-macos-x86-64"
+    cargo build --release
+    cp "target/release/glint" "release-files/$p_out_name"
+  else
+    echo "Unexpected target '$target'. Exiting." >&2
+    exit 1
+  fi
+
+
+  echo "| Creating archive"
+  archive
+}
+
+
+for target in darwin x86_64-unknown-linux-gnu x86_64-pc-windows-gnu; do
+  perform_build "$target"
+done
+
+# cargo build --release
+# cross build --release --target x86_64-unknown-linux-gnu
+# cross build --release --target x86_64-pc-windows-gnu
+
+# cp target/x86_64-unknown-linux-gnu/release/glint release-files/glint-linux-x86-64
+# cp target/x86_64-pc-windows-gnu/release/glint.exe release-files/glint-windows-x86-64.exe
+# cp target/release/glint release-files/glint-osx-x86-64
+
