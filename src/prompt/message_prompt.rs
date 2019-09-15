@@ -40,7 +40,7 @@ impl<'a> MessagePrompt<'a> {
             } else {
                 match sync_stdin.next() {
                     Some(e) => Some(e),
-                    _ => continue
+                    _ => continue,
                 }
             };
 
@@ -67,7 +67,7 @@ impl<'a> MessagePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
                     return MessagePromptResult::Message(self.input.join("\n"));
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
+                Some(InputEvent::Keyboard(KeyEvent::Char(c))) if c > '\x1F' => {
                     let (x, y) = self.cursor;
                     let line = self.input.get_mut(y as usize).unwrap();
                     line.insert(to_byte_offset(&line, x as usize), c);
@@ -151,8 +151,8 @@ impl<'a> MessagePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
                     return MessagePromptResult::Escape;
                 }
-                None => {},
-                _ => continue
+                None => {}
+                _ => continue,
             };
 
             let (x, y) = self.cursor;
