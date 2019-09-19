@@ -5,6 +5,10 @@ use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+mod parse_log;
+
+pub use parse_log::LogItem;
+
 #[derive(Debug, Clone)]
 pub struct Git {
     cwd: PathBuf,
@@ -74,6 +78,38 @@ impl Git {
         }
 
         command
+    }
+
+    pub fn log<I>(&self, other_args: impl IntoIterator<Item = I>) -> Command
+    where
+        I: AsRef<OsStr>,
+    {
+        let mut command = Command::new("git");
+
+        // Setup
+        command.current_dir(&self.cwd);
+        command.stdin(Stdio::null());
+
+        // Args
+        command.arg("log");
+        for arg in other_args {
+            command.arg(arg);
+        }
+        command.arg("--raw");
+        command.arg("--pretty=raw");
+
+        command
+    }
+
+    pub fn log_parsed<I>(&self, other_args: impl IntoIterator<Item = I>) -> io::Result<Vec<LogItem>>
+    where
+        I: AsRef<OsStr>,
+    {
+        let proc = self.log(other_args).stdout(Stdio::piped()).spawn()?;
+        let mut stdout = proc.stdout.expect("must be able to access stdout");
+        Ok(parse_log::parse_logs(
+            BufReader::new(stdout).lines().filter_map(Result::ok),
+        ))
     }
 
     /// Stages files using `git add`. Run from the repo root.gs
