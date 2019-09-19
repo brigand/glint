@@ -45,7 +45,6 @@ impl Parser {
 
         let liner = line.as_str();
         let is_blank = line.is_empty();
-        let leading_space = line.chars().next().filter(|c| c.is_whitespace()).is_some();
 
         let state = self.take();
         *self = match state {
@@ -167,7 +166,7 @@ impl Parser {
     }
 }
 
-pub fn parse_logs<'a>(mut lines: impl Iterator<Item = String>) -> Vec<LogItem> {
+pub fn parse_logs<'a>(lines: impl Iterator<Item = String>) -> Vec<LogItem> {
     let mut parser = Parser::SeekingHeader;
     let mut items = vec![];
 

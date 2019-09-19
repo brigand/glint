@@ -106,7 +106,7 @@ impl Git {
         I: AsRef<OsStr>,
     {
         let proc = self.log(other_args).stdout(Stdio::piped()).spawn()?;
-        let mut stdout = proc.stdout.expect("must be able to access stdout");
+        let stdout = proc.stdout.expect("must be able to access stdout");
         Ok(parse_log::parse_logs(
             BufReader::new(stdout).lines().filter_map(Result::ok),
         ))
