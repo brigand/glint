@@ -19,13 +19,7 @@ enum Parser {
         commit: String,
         epoch_secs: i64,
     },
-    Message {
-        commit: String,
-        epoch_secs: i64,
-        message: String,
-    },
-
-    Footer {
+    MsgFooter {
         commit: String,
         epoch_secs: i64,
         message: String,
@@ -45,6 +39,8 @@ impl Parser {
 
         let liner = line.as_str();
         let is_blank = line.is_empty();
+
+        let starts_four_spaces = line.chars().take(3).next().is_some() && line.chars().take(4).all(|c| c.is_whitespace());
 
         let state = self.take();
         *self = match state {
@@ -81,79 +77,74 @@ impl Parser {
                 }
             }
             PreMessage { commit, epoch_secs } => {
-                let message = if line.chars().take(4).all(|c| c.is_whitespace()) {
+                let message = if starts_four_spaces {
                     let (i, _) = line.char_indices().skip(4).next().unwrap();
                     liner[i..].to_string()
                 } else {
                     line
                 };
 
-                Message {
+                MsgFooter {
                     commit,
                     epoch_secs,
                     message,
+                    files: vec![],
                 }
             }
-            Message { .. } if is_blank => {
-                if let Message {
-                    commit,
-                    epoch_secs,
-                    message,
-                } = state
-                {
-                    Footer {
-                        commit,
-                        epoch_secs,
-                        message,
-                        files: vec![],
-                    }
-                } else {
-                    unreachable!()
-                }
-            }
-            Message {
+
+            MsgFooter {
                 commit,
                 epoch_secs,
                 mut message,
-            } => {
-                let addition = if line.chars().take(4).all(|c| c.is_whitespace()) {
-                    let (i, _) = line.char_indices().skip(4).next().unwrap();
-                    &liner[i..]
-                } else {
-                    liner
-                };
-
-                message.push('\n');
-                message.push_str(addition);
-
-                Message {
-                    commit,
-                    epoch_secs,
-                    message,
-                }
-            }
-
-            Footer {
-                commit,
-                epoch_secs,
-                message,
                 mut files,
             } => {
-                if line.starts_with(":") {
-                    if let Some(name) = liner.split_whitespace().last() {
-                        files.push(name.to_string());
-                    }
-                }
+                let msg_addition = if starts_four_spaces  {
+                    let (i, _) = line.char_indices().skip(4).next().unwrap();
+                    Some(&liner[i..])
+                } else {
+                    None
+                };
 
-                if is_blank {
-                    Complete(Some(LogItem {
+                if liner.is_empty() && files.is_empty() {
+                    message.push('\n');
+                    MsgFooter {
                         commit,
                         epoch_secs,
                         message,
                         files,
+                    }
+                } else if let Some(msg_addition) = msg_addition {
+                    if !message.is_empty() {
+                        message.push('\n');
+                    }
+
+                    message.push_str(msg_addition);
+
+                    MsgFooter {
+                        commit,
+                        epoch_secs,
+                        message,
+                        files,
+                    }
+                } else if line.starts_with(":") {
+                    if let Some(name) = liner.split_whitespace().last() {
+                        files.push(name.to_string());
+                    }
+                    MsgFooter {
+                        commit,
+                        epoch_secs,
+                        message,
+                        files,
+                    }
+                } else if liner.is_empty() {
+                    Complete(Some(LogItem {
+                        commit,
+                        epoch_secs,
+                        message: message.trim_end().into(),
+                        files,
                     }))
                 } else {
-                    Footer {
+                    MsgFooter {
                         commit,
                         epoch_secs,
                         message,
@@ -201,6 +192,8 @@ committer Frankie Bagnardi <f.bagnardi@gmail.com> 1568585467 -0700
 
     docs(gif): updates usage gif
 
+    much better
+
 :100644 100644 6bbe237 4fe5fc6 M        assets/usage.gif
 
 "#;
@@ -223,7 +216,7 @@ committer Frankie Bagnardi <f.bagnardi@gmail.com> 1568585467 -0700
             LogItem {
                 commit: "18d90e52cf8d6a486bee299b3949ebd213c85f2a".into(),
                 epoch_secs: 1568585467,
-                message: "docs(gif): updates usage gif".into(),
+                message: "docs(gif): updates usage gif\n\nmuch better".into(),
                 files: vec!["assets/usage.gif".into()],
             }
         );
