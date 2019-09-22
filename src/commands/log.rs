@@ -1,17 +1,17 @@
 use crate::cli;
-use glint::{prompt, Commit, Config, Git};
+use glint::{Config, Git};
 
-fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
-    match crossterm::RawScreen::into_raw_mode() {
-        Err(_) => {
-            eprintln!("Failed to convert stdio to raw mode. Can't continue.");
-            std::process::exit(1);
-        }
-        Ok(raw_screen) => f(raw_screen),
-    }
-}
+// fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
+//     match crossterm::RawScreen::into_raw_mode() {
+//         Err(_) => {
+//             eprintln!("Failed to convert stdio to raw mode. Can't continue.");
+//             std::process::exit(1);
+//         }
+//         Ok(raw_screen) => f(raw_screen),
+//     }
+// }
 
-pub fn log(params: cli::Log, mut config: Config) {
+pub fn log(params: cli::Log, _config: Config) {
     let git = match Git::from_cwd() {
         Ok(git) => git,
         Err(err) => {
