@@ -2,41 +2,66 @@ use std::ops::Range;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LogItem {
-    commit: String,
-    epoch_secs: i64,
-    message: String,
-    files: Vec<String>,
+    pub commit: String,
+    pub epoch_secs: i64,
+    pub message: String,
+    pub files: Vec<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Conventional<'a> {
-    ty: &'a str,
-    scope: Option<&'a str>,
-    message: &'a str,
+    pub ty: &'a str,
+    pub scope: Option<&'a str>,
+    pub message: &'a str,
+}
+
+fn bytes_until_non_ws(s: &str) -> usize {
+    let mut offset = 0;
+    for c in s.chars() {
+        if c.is_whitespace() {
+            offset += c.len_utf8();
+        } else {
+            break;
+        }
+    }
+    offset
 }
 
 impl LogItem {
-    fn as_conventional<'a>(&'a self) -> Option<Conventional<'a>> {
+    pub fn as_conventional<'a>(&'a self) -> Option<Conventional<'a>> {
         let mut ty_pos = None;
         let mut skip_scope = false;
         let mut scope_pos = None;
         let mut message_pos = None;
 
         for (i, c) in self.message.char_indices() {
+            if c.is_whitespace() {
+                continue;
+            }
+
             if ty_pos.is_none() {
                 if c == '(' || c == ':' {
                     ty_pos = Some(0..i);
-                }
 
-                if c == ':' {
-                    skip_scope = true;
+                    if c == ':' {
+                        let start = i + 1 + bytes_until_non_ws(&self.message[i + 1..]);
+                        message_pos = Some(start..self.message.len());
+                        break;
+                    }
+                } else if !c.is_alphabetic() {
+                    return None;
                 }
-            } else if skip_scope || scope_pos.is_none() {
-                message_pos = Some(i..self.message.len());
+            } else if c == ':' {
+                let start = i + bytes_until_non_ws(&self.message[i + 1..]);
+
+                message_pos = Some(start..self.message.len());
+                break;
             } else if c == ')' {
-                scope_pos = ty_pos.as_ref().map(|range| (range.start + 1)..i);
+                scope_pos = ty_pos.as_ref().map(|range| (range.end + 1)..i);
             }
         }
+
+        // println!("ty_pos: {:#?}\nscope: {:#?}\nmessage: {:#?}", ty_pos, scope_pos, message_pos);
 
         match (ty_pos, scope_pos, message_pos) {
             (Some(ty), scope, Some(message)) => Some(Conventional {
