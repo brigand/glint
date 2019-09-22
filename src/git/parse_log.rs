@@ -40,7 +40,8 @@ impl Parser {
         let liner = line.as_str();
         let is_blank = line.is_empty();
 
-        let starts_four_spaces = line.chars().take(3).next().is_some() && line.chars().take(4).all(|c| c.is_whitespace());
+        let starts_four_spaces = line.chars().take(3).next().is_some()
+            && line.chars().take(4).all(|c| c.is_whitespace());
 
         let state = self.take();
         *self = match state {
@@ -98,9 +99,8 @@ impl Parser {
                 mut message,
                 mut files,
             } => {
-                let msg_addition = if starts_four_spaces  {
-                    let (i, _) = line.char_indices().skip(4).next().unwrap();
-                    Some(&liner[i..])
+                let msg_addition = if starts_four_spaces {
+                    line.char_indices().skip(4).next().map(|(i, _)| &liner[i..])
                 } else {
                     None
                 };

@@ -12,5 +12,8 @@ fn main() {
         Cli::Commit(params) => {
             commands::commit(params, config);
         }
+        Cli::Log(params) => {
+            commands::log(params, config);
+        }
     }
 }
