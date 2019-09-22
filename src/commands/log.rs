@@ -9,7 +9,6 @@ fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
         }
         Ok(raw_screen) => f(raw_screen),
     }
-    //x
 }
 
 pub fn log(params: cli::Log, mut config: Config) {

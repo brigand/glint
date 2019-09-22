@@ -6,6 +6,47 @@ pub struct LogItem {
     files: Vec<String>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Conventional<'a> {
+    ty: &'a str,
+    scope: Option<&'a str>,
+    message: &'a str,
+}
+
+impl LogItem {
+    fn as_conventional<'a>(&'a self) -> Option<Conventional<'a>> {
+        let mut ty_pos: Option<(usize, usize)> = None;
+        let mut skip_scope = false;
+        let mut scope_pos: Option<(usize, usize)> = None;
+        let mut message_pos: Option<(usize, usize)> = None;
+
+        for (i, c) in self.message.char_indices() {
+            if ty_pos.is_none() {
+                if c == '(' || c == ':' {
+                    ty_pos = Some((0, i));
+                }
+
+                if c == ':' {
+                    skip_scope = true;
+                }
+            } else if skip_scope || scope_pos.is_none() {
+                message_pos = Some((i, self.message.len()));
+            } else if c == ')' {
+                scope_pos = Some((ty_pos.clone().unwrap().1 + 1, i));
+            }
+        }
+
+        match (ty_pos, scope_pos, message_pos) {
+            (Some(ty), scope, Some(message)) => Some(Conventional {
+                ty: &self.message[ty.0..ty.1],
+                scope: scope.map(|scope| &self.message[scope.0..scope.1]),
+                message: &self.message[message.0..message.1],
+            }),
+            _ => None,
+        }
+    }
+}
+
 enum Parser {
     SeekingHeader,
     Header {
@@ -179,7 +220,7 @@ pub fn parse_logs<'a>(lines: impl Iterator<Item = String>) -> Vec<LogItem> {
 
 #[cfg(test)]
 mod test {
-    use super::{parse_logs, LogItem};
+    use super::{parse_logs, LogItem, Conventional};
     use std::io::{BufRead, BufReader};
 
     // Note: the whitespace here is important, and there is
@@ -219,6 +260,21 @@ committer Frankie Bagnardi <f.bagnardi@gmail.com> 1568585467 -0700
                 message: "docs(gif): updates usage gif\n\nmuch better".into(),
                 files: vec!["assets/usage.gif".into()],
             }
+        );
+    }
+
+       fn as_conventional() {
+        let lines = BufReader::new(RAW.as_bytes())
+            .lines()
+            .filter_map(|r| r.ok());
+        let logs = parse_logs(lines);
+        assert_eq!(
+            logs[0].as_conventional(),
+            Some(Conventional {
+                ty: "docs",
+                scope: Some("gif"),
+                message: "updates usage gif\n\nmuch better"
+            })
         );
     }
 }
