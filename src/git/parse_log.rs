@@ -1,4 +1,3 @@
-use std::ops::Range;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LogItem {
@@ -30,7 +29,6 @@ fn bytes_until_non_ws(s: &str) -> usize {
 impl LogItem {
     pub fn as_conventional<'a>(&'a self) -> Option<Conventional<'a>> {
         let mut ty_pos = None;
-        let mut skip_scope = false;
         let mut scope_pos = None;
         let mut message_pos = None;
 

@@ -1,6 +1,5 @@
 use crate::cli;
 use crossterm as ct;
-use crossterm::Command as _Command;
 use glint::{Config, Git};
 use std::io::Write as _Write;
 use std::{io, iter};
@@ -63,5 +62,5 @@ pub fn log(params: cli::Log, _config: Config) {
         )
         .unwrap();
     }
-    stdout.flush();
+    stdout.flush().unwrap();
 }
