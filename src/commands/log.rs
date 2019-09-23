@@ -1,4 +1,5 @@
 use crate::cli;
+use glint::string;
 use crossterm as ct;
 use glint::{Config, Git};
 use std::io::Write as _Write;
@@ -22,8 +23,9 @@ pub fn log(params: cli::Log, _config: Config) {
             std::process::exit(1);
         }
     };
-
-    let height = std::cmp::max(ct::terminal().terminal_size().1, 15);
+    let size = ct::terminal().terminal_size();
+    let width = std::cmp::max(size.0, 60) as usize;
+    let height = std::cmp::max(size.1, 15) as usize;
     let count_arg = format!("-{}", height);
     let args = iter::once(&count_arg).chain(params.git_args.iter());
     let logs = git.log_parsed(args).expect("parse logs");
@@ -42,18 +44,13 @@ pub fn log(params: cli::Log, _config: Config) {
             Some(ref conv) => conv.message,
             None => &log.message,
         };
+
         let message = message
             .split("\n")
-            .enumerate()
-            .map(|(i, s)| {
-                if i == 0 {
-                    s.to_string()
-                } else {
-                    format!("         {}", s)
-                }
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
+            .filter(|s| s.chars().any(|c| !c.is_whitespace()))
+            .collect::<Vec<&str>>()
+            .join(" ⏎");
+        let message = string::split_at(&message, width).0.to_string();
 
         ct::queue!(
             stdout,
