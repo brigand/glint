@@ -32,10 +32,6 @@ impl LogItem {
         let mut message_pos = None;
 
         for (i, c) in self.message.char_indices() {
-            if c.is_whitespace() {
-                continue;
-            }
-
             if ty_pos.is_none() {
                 if c == '(' || c == ':' {
                     ty_pos = Some(0..i);
