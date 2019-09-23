@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LogItem {
     pub commit: String,
@@ -50,7 +49,7 @@ impl LogItem {
                     return None;
                 }
             } else if c == ':' {
-                let start = i + bytes_until_non_ws(&self.message[i + 1..]);
+                let start = i + 1 + bytes_until_non_ws(&self.message[i + 1..]);
 
                 message_pos = Some(start..self.message.len());
                 break;
@@ -288,6 +287,7 @@ committer Frankie Bagnardi <f.bagnardi@gmail.com> 1568585467 -0700
         );
     }
 
+    #[test]
     fn as_conventional() {
         let lines = BufReader::new(RAW.as_bytes())
             .lines()
