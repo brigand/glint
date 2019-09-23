@@ -39,9 +39,21 @@ pub fn log(params: cli::Log, _config: Config) {
         };
 
         let message = match conv {
-            Some(ref conv) => conv.message.to_string(),
-            None => log.message.clone(),
+            Some(ref conv) => conv.message,
+            None => &log.message,
         };
+        let message = message
+            .split("\n")
+            .enumerate()
+            .map(|(i, s)| {
+                if i == 0 {
+                    s.to_string()
+                } else {
+                    format!("         {}", s)
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
 
         ct::queue!(
             stdout,
