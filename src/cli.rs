@@ -11,6 +11,8 @@ pub struct Log {
     pub ty: Option<String>,
     pub scope: Option<String>,
     pub git_args: Vec<String>,
+    pub debug: bool,
+    pub num: Option<usize>,
 }
 
 pub enum Cli {
@@ -33,7 +35,8 @@ fn get_app() -> clap::App<'static, 'static> {
         (@subcommand log =>
         (@arg type: -t --type +takes_value "Filter by 'type' e.g. 'feat'")
         (@arg scope: -s --scope +takes_value "Filter by 'scope' e.g. 'client'")
-        (@arg all: -n --num "Limit number of commits considered")
+        (@arg num: -n --num +takes_value "Limit number of commits considered")
+        (@arg debug: --debug "Use debug logging format")
         (@arg GIT_ARGS: [GIT_ARGS]... "Arguments which will be passed to 'git log'. Pass a '--' argument before the git args to disable special parsing.")
         )
 
@@ -68,6 +71,8 @@ pub fn parse() -> Cli {
         ("log", Some(args)) => Cli::Log(Log {
             ty: args.value_of("type").map(String::from),
             scope: args.value_of("scope").map(String::from),
+            debug: args.is_present("debug"),
+            num: args.value_of("num").and_then(|s| s.parse().ok()),
             git_args: get_git_args(args),
         }),
         _ => {
