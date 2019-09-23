@@ -17,7 +17,7 @@ pub fn log(params: cli::Log, _config: Config) {
     let width = std::cmp::max(size.0, 60) as usize;
     let height = params
         .num
-        .unwrap_or_else(|| std::cmp::max(size.1, 15) as usize);
+        .unwrap_or_else(|| std::cmp::max(size.1, 15) as usize).saturating_sub(1);
     let count_arg = format!("-{}", height);
     let args = iter::once(&count_arg).chain(params.git_args.iter());
     let logs = git.log_parsed(args).expect("parse logs");
@@ -54,13 +54,22 @@ pub fn log(params: cli::Log, _config: Config) {
                 ct::Output(" ".into()),
                 ct::SetFg(ct::Color::Magenta),
                 ct::Output(ty),
+                ct::SetFg(ct::Color::Grey),
+                ct::Output(match scope {
+                    Some(_) => "(".into(),
+                    None => "".into(),
+                }),
                 ct::SetFg(ct::Color::Blue),
                 ct::Output(match scope {
-                    Some(scope) => format!("({}):", scope),
-                    None => ":".into(),
+                    Some(ref scope) => scope.into(),
+                    None => "".into(),
+                }),
+                ct::SetFg(ct::Color::Grey),
+                ct::Output(match scope {
+                    Some(_) => "): ".into(),
+                    None => ": ".into(),
                 }),
                 ct::SetFg(ct::Color::Reset),
-                ct::Output(" ".into()),
                 ct::Output(message),
                 ct::Output("\n".into())
             )

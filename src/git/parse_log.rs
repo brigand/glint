@@ -26,6 +26,8 @@ fn bytes_until_non_ws(s: &str) -> usize {
 }
 
 impl LogItem {
+    /// Parse the message into the components (type, scope, message). Always returns
+    /// slices of the original message.
     pub fn as_conventional<'a>(&'a self) -> Option<Conventional<'a>> {
         let mut ty_pos = None;
         let mut scope_pos = None;
@@ -67,6 +69,7 @@ impl LogItem {
     }
 }
 
+/// Parses `git log --format=raw --raw`
 enum Parser {
     SeekingHeader,
     Header {
