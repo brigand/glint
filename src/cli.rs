@@ -1,4 +1,4 @@
-use clap::{clap_app, AppSettings};
+use clap::{clap_app, AppSettings, crate_version};
 
 pub struct Commit {
     pub message: Option<String>,
@@ -22,10 +22,11 @@ pub enum Cli {
 
 fn get_app() -> clap::App<'static, 'static> {
     clap_app!(glint =>
-        (version: "0.1")
+        (version: crate_version!())
         (author: "Frankie Bagnardi <f.bagnardi@gmail.com>")
-        (about: "A friendly commitlint CLI. You probably want the 'commit' subcommand, or 'c' for short.")
+        (about: "A friendly conventional commit tool. You probably want the 'commit' subcommand, or 'c' for short.")
         (@subcommand commit =>
+        (version: crate_version!())
         (@arg message: -m --message +takes_value "Specifies the commit message (optional; otherwise interactive prompt)")
         (@arg type: -t --type +takes_value "Sets the 'type' component of the commitlint (optional; otherwise interactive prompt)")
         (@arg scope: -s --scope +takes_value "Sets the 'scope' component of the commitlint (optional; otherwise interactive prompt)")
@@ -33,6 +34,7 @@ fn get_app() -> clap::App<'static, 'static> {
         (@arg GIT_ARGS: [GIT_ARGS]... "Arguments which will be passed to 'git commit'. Pass a '--' argument before the git args to disable special parsing.")
         )
         (@subcommand log =>
+        (version: crate_version!())
         (@arg type: -t --type +takes_value "Filter by 'type' e.g. 'feat'")
         (@arg scope: -s --scope +takes_value "Filter by 'scope' e.g. 'client'")
         (@arg num: -n --num +takes_value "Limit number of commits considered")
