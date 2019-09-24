@@ -1,85 +1,62 @@
-use clap::{clap_app, AppSettings, crate_version};
+use structopt::StructOpt;
 
+#[derive(StructOpt)]
 pub struct Commit {
+    /// Specifies the commit message (optional; otherwise interactive prompt)
+    #[structopt(short, long)]
     pub message: Option<String>,
+
+    /// Sets the 'type' component of the commitlint (optional; otherwise interactive prompt)
+    #[structopt(short, long)]
     pub ty: Option<String>,
+
+    /// Sets the 'scope' component of the commitlint (optional; otherwise interactive prompt)
+    #[structopt(short, long)]
     pub scope: Option<String>,
+
+    #[structopt(short, long)]
+    pub all: bool,
+
+    /// Arguments which will be passed to 'git commit'.
+    /// Pass a '--' argument before the git args to disable special parsing.
+    #[structopt(short, long)]
     pub git_args: Vec<String>,
 }
 
+#[derive(StructOpt)]
 pub struct Log {
+    /// Filter by 'type' e.g. 'feat'
+    #[structopt(short, long)]
     pub ty: Option<String>,
+
+    /// Filter by 'scope' e.g. 'client'
+    #[structopt(short, long)]
     pub scope: Option<String>,
-    pub git_args: Vec<String>,
-    pub debug: bool,
+
+    /// Number of commits to display.
+    #[structopt(short, long)]
     pub num: Option<usize>,
+
+    /// Only useful when filing bug reports for glint.
+    #[structopt(short, long)]
+    pub debug: bool,
+
+    /// Arguments which will be passed to 'git log'. Note that certain
+    /// options will break the command. Passing file paths/prefixes is
+    /// typical usage.
+    pub git_args: Vec<String>,
 }
 
+/// A friendly conventional commit tool. You probably want the 'commit' subcommand, or 'c' for short.
+#[derive(StructOpt)]
 pub enum Cli {
+    /// Create a new commit
     Commit(Commit),
+
+    /// View recent commits
     Log(Log),
 }
 
-fn get_app() -> clap::App<'static, 'static> {
-    clap_app!(glint =>
-        (version: crate_version!())
-        (author: "Frankie Bagnardi <f.bagnardi@gmail.com>")
-        (about: "A friendly conventional commit tool. You probably want the 'commit' subcommand, or 'c' for short.")
-        (@subcommand commit =>
-        (version: crate_version!())
-        (@arg message: -m --message +takes_value "Specifies the commit message (optional; otherwise interactive prompt)")
-        (@arg type: -t --type +takes_value "Sets the 'type' component of the commitlint (optional; otherwise interactive prompt)")
-        (@arg scope: -s --scope +takes_value "Sets the 'scope' component of the commitlint (optional; otherwise interactive prompt)")
-        (@arg all: -a --all "Allows passing --all to git without the -- separator.")
-        (@arg GIT_ARGS: [GIT_ARGS]... "Arguments which will be passed to 'git commit'. Pass a '--' argument before the git args to disable special parsing.")
-        )
-        (@subcommand log =>
-        (version: crate_version!())
-        (@arg type: -t --type +takes_value "Filter by 'type' e.g. 'feat'")
-        (@arg scope: -s --scope +takes_value "Filter by 'scope' e.g. 'client'")
-        (@arg num: -n --num +takes_value "Limit number of commits considered")
-        (@arg debug: --debug "Use debug logging format")
-        (@arg GIT_ARGS: [GIT_ARGS]... "Arguments which will be passed to 'git log'. Pass a '--' argument before the git args to disable special parsing.")
-        )
-
-    )
-    // .setting(AppSettings::SubcommandsNegateReqs)
-    .setting(AppSettings::TrailingVarArg)
-    .setting(AppSettings::InferSubcommands)
-    .setting(AppSettings::SubcommandRequiredElseHelp)
-}
-
-fn get_git_args(args: &clap::ArgMatches) -> Vec<String> {
-    let mut git_args = args.values_of_lossy("GIT_ARGS").unwrap_or_default();
-
-    if args.is_present("all") {
-        git_args.insert(0, "-a".into());
-    }
-
-    git_args
-}
-
 pub fn parse() -> Cli {
-    let app = get_app();
-    let args = app.get_matches();
-
-    match args.subcommand() {
-        ("commit", Some(args)) => Cli::Commit(Commit {
-            message: args.value_of("message").map(String::from),
-            ty: args.value_of("type").map(String::from),
-            scope: args.value_of("scope").map(String::from),
-            git_args: get_git_args(args),
-        }),
-        ("log", Some(args)) => Cli::Log(Log {
-            ty: args.value_of("type").map(String::from),
-            scope: args.value_of("scope").map(String::from),
-            debug: args.is_present("debug"),
-            num: args.value_of("num").and_then(|s| s.parse().ok()),
-            git_args: get_git_args(args),
-        }),
-        _ => {
-            eprintln!("{}", args.usage());
-            std::process::exit(1);
-        }
-    }
+    Cli::from_args()
 }

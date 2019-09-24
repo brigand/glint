@@ -10,9 +10,9 @@ documentation="https://docs.rs/glint"
 license = "MIT"
 
 [dependencies]
-clap = "2"
 crossterm = "0.10"
 unic-segment = "0.9"
+structopt = "0.3"
 # Considering using this for `git diff`
 # cursive-multiplex = "^0.2.0"
 
