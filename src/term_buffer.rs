@@ -73,10 +73,14 @@ impl TermBuffer {
     /// resulting in future renders to happen below it.
     /// If this is called, and then the TermBuffer is dropped, the default behavior of clearing
     /// the area will be a no-op.
-    pub fn forget(&mut self) {
+    pub fn forget(&mut self) -> usize {
+        let lines = self.flushed.len();
+
         self.cursor_to_end();
         self.state = Default::default();
         self.flushed = Default::default();
+
+        lines
     }
 
     /// Perform the necessary update to the terminal. This may choose a more

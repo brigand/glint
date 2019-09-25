@@ -17,7 +17,7 @@ pub fn log(params: cli::Log, _config: Config) {
     let width = std::cmp::max(size.0, 60) as usize;
     let height = params
         .num
-        .unwrap_or_else(|| std::cmp::max(size.1, 15) as usize).saturating_sub(1);
+        .unwrap_or_else(|| std::cmp::max(size.1, 15) as usize);
     let count_arg = format!("-{}", height);
     let args = iter::once(&count_arg).chain(params.git_args.iter());
     let logs = git.log_parsed(args).expect("parse logs");

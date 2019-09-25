@@ -13,7 +13,7 @@ pub struct ScopePrompt<'a> {
 }
 
 pub enum ScopePromptResult {
-    Scope(Option<String>),
+    Scope(Option<String>, usize),
     Escape,
     Terminate,
 }
@@ -189,8 +189,8 @@ impl<'a> ScopePrompt<'a> {
             buffer.flush();
 
             if self.finished {
-                buffer.forget();
-                return ScopePromptResult::Scope(Some(self.input).filter(|s| !s.is_empty()));
+                let rows = buffer.forget();
+                return ScopePromptResult::Scope(Some(self.input).filter(|s| !s.is_empty()), rows);
             }
         }
     }

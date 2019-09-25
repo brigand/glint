@@ -1,5 +1,7 @@
 use crate::cli;
+use crossterm as ct;
 use glint::{prompt, Commit, Config, Git};
+use std::io::Write as _Write;
 
 fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
     match crossterm::RawScreen::into_raw_mode() {
@@ -47,6 +49,8 @@ pub fn commit(params: cli::Commit, mut config: Config) {
     }
 
     let mut commit_files: Option<Vec<String>> = None;
+
+    let mut escape_clear_lines = 0;
 
     loop {
         match stage {
@@ -98,10 +102,12 @@ pub fn commit(params: cli::Commit, mut config: Config) {
                 let mut escape = false;
                 let scope =
                     match params.scope {
-                        Some(ref scope) => Some(Some(scope.to_string())),
+                        Some(ref scope) => Some((Some(scope.to_string()), 0)),
                         None => with_raw(|_raw| {
                             match prompt::ScopePrompt::new(&mut config, &ty).run() {
-                                prompt::ScopePromptResult::Scope(scope) => Some(scope),
+                                prompt::ScopePromptResult::Scope(scope, lines) => {
+                                    Some((scope, lines))
+                                }
                                 prompt::ScopePromptResult::Terminate => None,
                                 prompt::ScopePromptResult::Escape => {
                                     escape = true;
@@ -116,12 +122,13 @@ pub fn commit(params: cli::Commit, mut config: Config) {
                     continue;
                 }
 
-                let scope = match scope {
-                    Some(s) => s,
+                let (scope, lines) = match scope {
+                    Some(t) => t,
                     None => std::process::exit(1),
                 };
 
                 stage = Stage::Message(ty, scope);
+                escape_clear_lines = lines as u16;
             }
             Stage::Message(ty, scope) => {
                 let mut escape = false;
@@ -139,6 +146,14 @@ pub fn commit(params: cli::Commit, mut config: Config) {
 
                 if escape {
                     stage = Stage::Scope(ty);
+
+                    let mut stderr = std::io::stderr();
+                    ct::queue!(
+                        stderr,
+                        ct::Up(escape_clear_lines + 2),
+                        ct::Clear(ct::ClearType::FromCursorDown)
+                    )
+                    .unwrap();
 
                     continue;
                 }
