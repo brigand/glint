@@ -2,17 +2,17 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 pub struct Commit {
-    /// Specifies the commit message (optional; otherwise interactive prompt)
-    #[structopt(short, long)]
-    pub message: Option<String>,
-
-    /// Sets the 'type' component of the commitlint (optional; otherwise interactive prompt)
+    /// Sets the 'type' component of the commit (optional; otherwise interactive prompt)
     #[structopt(short, long)]
     pub ty: Option<String>,
 
-    /// Sets the 'scope' component of the commitlint (optional; otherwise interactive prompt)
+    /// Sets the 'scope' component of the commit (optional; otherwise interactive prompt)
     #[structopt(short, long)]
     pub scope: Option<String>,
+
+    /// Sets the main message component of the commit (optional; otherwise interactive prompt)
+    #[structopt(short, long)]
+    pub message: Option<String>,
 
     #[structopt(short, long)]
     pub all: bool,
