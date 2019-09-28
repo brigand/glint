@@ -123,7 +123,8 @@ impl<'a> MessagePrompt<'a> {
                         let end = to_byte_offset(line, x as usize + 1);
                         let start = to_byte_offset(line, prev_word_grapheme(line, x as usize));
                         line.replace_range(start..end, "");
-                        self.cursor.0 = start as u16;
+
+                        self.cursor.0 = string::len(&line[..start]) as u16;
                     }
                 },
                 Some(InputEvent::Keyboard(KeyEvent::Backspace)) => match self.cursor {
@@ -143,7 +144,7 @@ impl<'a> MessagePrompt<'a> {
                         if x as usize >= string::len(line) {
                             line.pop();
                         } else {
-                            line.remove(to_byte_offset(&line, x as usize) - 1);
+                            line.replace_range(to_byte_range(line as &str, x as usize - 1), "");
                         }
                         self.cursor.0 -= 1;
                     }
