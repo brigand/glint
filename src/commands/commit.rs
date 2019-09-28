@@ -13,7 +13,7 @@ fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
     }
 }
 
-pub fn commit(params: cli::Commit, mut config: Config) {
+pub fn commit(params: cli::Commit, config: Config) {
     let git = match Git::from_cwd() {
         Ok(git) => git,
         Err(err) => {
@@ -56,8 +56,7 @@ pub fn commit(params: cli::Commit, mut config: Config) {
         match stage {
             Stage::Files => {
                 commit_files = with_raw(|_raw| {
-                    match prompt::FilesPrompt::new(&mut config, &git, git_status.clone().unwrap())
-                        .run()
+                    match prompt::FilesPrompt::new(&config, &git, git_status.clone().unwrap()).run()
                     {
                         prompt::FilesPromptResult::Files(files) => Some(files),
                         prompt::FilesPromptResult::Terminate => None,
@@ -76,7 +75,7 @@ pub fn commit(params: cli::Commit, mut config: Config) {
 
                 let ty = match params.ty {
                     Some(ref ty) => Some(ty.to_string()),
-                    None => with_raw(|_raw| match prompt::TypePrompt::new(&mut config).run() {
+                    None => with_raw(|_raw| match prompt::TypePrompt::new(&config).run() {
                         prompt::TypePromptResult::Type(ty) => Some(ty),
                         prompt::TypePromptResult::Terminate => None,
                         prompt::TypePromptResult::Escape => {
@@ -100,22 +99,17 @@ pub fn commit(params: cli::Commit, mut config: Config) {
             }
             Stage::Scope(ty) => {
                 let mut escape = false;
-                let scope =
-                    match params.scope {
-                        Some(ref scope) => Some((Some(scope.to_string()), 0)),
-                        None => with_raw(|_raw| {
-                            match prompt::ScopePrompt::new(&mut config, &ty).run() {
-                                prompt::ScopePromptResult::Scope(scope, lines) => {
-                                    Some((scope, lines))
-                                }
-                                prompt::ScopePromptResult::Terminate => None,
-                                prompt::ScopePromptResult::Escape => {
-                                    escape = true;
-                                    None
-                                }
-                            }
-                        }),
-                    };
+                let scope = match params.scope {
+                    Some(ref scope) => Some((Some(scope.to_string()), 0)),
+                    None => with_raw(|_raw| match prompt::ScopePrompt::new(&config, &ty).run() {
+                        prompt::ScopePromptResult::Scope(scope, lines) => Some((scope, lines)),
+                        prompt::ScopePromptResult::Terminate => None,
+                        prompt::ScopePromptResult::Escape => {
+                            escape = true;
+                            None
+                        }
+                    }),
+                };
 
                 if escape {
                     stage = Stage::Type;
@@ -134,7 +128,7 @@ pub fn commit(params: cli::Commit, mut config: Config) {
                 let mut escape = false;
                 let message = match params.message {
                     Some(ref message) => Some(message.to_string()),
-                    None => with_raw(|_raw| match prompt::MessagePrompt::new(&mut config).run() {
+                    None => with_raw(|_raw| match prompt::MessagePrompt::new(&config).run() {
                         prompt::MessagePromptResult::Message(message) => Some(message),
                         prompt::MessagePromptResult::Terminate => None,
                         prompt::MessagePromptResult::Escape => {

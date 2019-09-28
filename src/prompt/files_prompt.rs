@@ -7,7 +7,7 @@ use std::iter;
 
 #[derive(Debug)]
 pub struct FilesPrompt<'a> {
-    config: &'a mut Config,
+    config: &'a Config,
     checked: Vec<bool>,
     selected_index: u16,
     options: GitStatus,
@@ -21,7 +21,7 @@ pub enum FilesPromptResult {
 }
 
 impl<'a> FilesPrompt<'a> {
-    pub fn new(config: &'a mut Config, git: &'a Git, options: GitStatus) -> Self {
+    pub fn new(config: &'a Config, git: &'a Git, options: GitStatus) -> Self {
         FilesPrompt {
             config,
             checked: (0..options.len()).map(|_| false).collect(),

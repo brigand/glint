@@ -4,7 +4,7 @@ use crossterm::{self as ct, InputEvent, KeyEvent};
 
 #[derive(Debug)]
 pub struct ScopePrompt<'a> {
-    config: &'a mut Config,
+    config: &'a Config,
     input: String,
     selected_index: u16,
     ty: &'a str,
@@ -19,7 +19,7 @@ pub enum ScopePromptResult {
 }
 
 impl<'a> ScopePrompt<'a> {
-    pub fn new(config: &'a mut Config, ty: &'a str) -> Self {
+    pub fn new(config: &'a Config, ty: &'a str) -> Self {
         ScopePrompt {
             config,
             input: Default::default(),

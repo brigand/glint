@@ -5,7 +5,7 @@ use crossterm::{self as ct, style, InputEvent, KeyEvent};
 
 #[derive(Debug)]
 pub struct TypePrompt<'a> {
-    config: &'a mut Config,
+    config: &'a Config,
     input: String,
     selected_index: u16,
 }
@@ -17,7 +17,7 @@ pub enum TypePromptResult {
 }
 
 impl<'a> TypePrompt<'a> {
-    pub fn new(config: &'a mut Config) -> Self {
+    pub fn new(config: &'a Config) -> Self {
         TypePrompt {
             config,
             input: Default::default(),

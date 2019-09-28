@@ -5,7 +5,7 @@ use crossterm::{self as ct, InputEvent, KeyEvent};
 
 #[derive(Debug)]
 pub struct MessagePrompt<'a> {
-    config: &'a mut Config,
+    config: &'a Config,
     input: Vec<String>,
     cursor: (u16, u16),
 }
@@ -17,7 +17,7 @@ pub enum MessagePromptResult {
 }
 
 impl<'a> MessagePrompt<'a> {
-    pub fn new(config: &'a mut Config) -> Self {
+    pub fn new(config: &'a Config) -> Self {
         MessagePrompt {
             config,
             input: vec![String::new()],
