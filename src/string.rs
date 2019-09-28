@@ -1,3 +1,4 @@
+use std::ops::Range;
 use unic_segment::{Graphemes, WordBounds};
 
 pub fn len(s: &str) -> usize {
@@ -12,6 +13,18 @@ pub fn to_byte_offset(s: &'_ str, grapheme_offset: usize) -> usize {
     }
 
     byte_offset
+}
+
+pub fn to_byte_range(s: &'_ str, grapheme_offset: usize) -> Range<usize> {
+    let mut start = 0;
+    let mut end = 0;
+
+    for item in Graphemes::new(s).take(grapheme_offset + 1) {
+        start = end;
+        end = start + item.len();
+    }
+
+    start..end
 }
 
 pub fn to_byte_offset_end(s: &'_ str, grapheme_offset: usize) -> usize {

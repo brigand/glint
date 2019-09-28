@@ -1,4 +1,4 @@
-use crate::string::{self, next_word_grapheme, prev_word_grapheme, to_byte_offset};
+use crate::string::{self, next_word_grapheme, prev_word_grapheme, to_byte_offset, to_byte_range};
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{self as ct, InputEvent, KeyEvent};
@@ -123,7 +123,7 @@ impl<'a> MessagePrompt<'a> {
                         let end = to_byte_offset(line, x as usize + 1);
                         let start = to_byte_offset(line, prev_word_grapheme(line, x as usize));
                         line.replace_range(start..end, "");
-                        self.cursor.0 = (start) as u16;
+                        self.cursor.0 = start as u16;
                     }
                 },
                 Some(InputEvent::Keyboard(KeyEvent::Backspace)) => match self.cursor {
@@ -148,6 +148,11 @@ impl<'a> MessagePrompt<'a> {
                         self.cursor.0 -= 1;
                     }
                 },
+                Some(InputEvent::Keyboard(KeyEvent::Ctrl('d'))) => {
+                    let line = &mut self.input[self.cursor.1 as usize];
+
+                    line.replace_range(to_byte_range(line, self.cursor.0 as usize), "");
+                }
                 Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
                     return MessagePromptResult::Escape;
                 }
