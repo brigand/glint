@@ -58,7 +58,7 @@ impl<'a> ScopePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
                     return ScopePromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
+                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
                     self.finished = true;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
@@ -103,7 +103,7 @@ impl<'a> ScopePrompt<'a> {
                 _ => continue,
             };
 
-            let (term_width, _) = ct::terminal().terminal_size();
+            let (term_width, _) = ct::terminal().size().expect("get terminal size");
 
             let mut lines = figlet.create_vec();
 

@@ -79,7 +79,7 @@ impl<'a> TypePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
                     return TypePromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
+                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
                     return TypePromptResult::Type(self.get_at_selected_index().to_string());
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {

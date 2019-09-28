@@ -13,7 +13,7 @@ pub fn log(params: cli::Log, _config: Config) {
             std::process::exit(1);
         }
     };
-    let size = ct::terminal().terminal_size();
+    let size = ct::terminal().size().expect("terminal size");
     let width = std::cmp::max(size.0, 60) as usize;
     let height = params
         .num

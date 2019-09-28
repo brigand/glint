@@ -85,7 +85,7 @@ impl<'a> FilesPrompt<'a> {
 
                     let _r = self.git.diff_less(files);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
+                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
                     let selected = self
                         .options
                         .iter()

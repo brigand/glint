@@ -64,7 +64,7 @@ impl<'a> MessagePrompt<'a> {
                     self.input.push(String::new());
                     self.cursor.1 += 1;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char('\n'))) => {
+                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
                     return MessagePromptResult::Message(self.input.join("\n"));
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char(c))) if c > '\x1F' => {
