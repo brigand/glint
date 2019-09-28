@@ -79,7 +79,7 @@ impl<'a> MessagePrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Right)) => {
                     let (x, y) = self.cursor;
                     let line = self.input.get_mut(y as usize).expect("KE::Right get_mut");
-                    if line.len() < x as usize + 1 {
+                    if string::len(line) < x as usize + 1 {
                         line.push(' ');
                     }
                     self.cursor.0 += 1;
