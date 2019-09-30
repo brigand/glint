@@ -31,6 +31,7 @@ impl Default for Config {
                 "revert",
                 "style",
                 "test",
+                "enhance",
                 "improvement",
             ]
             .into_iter()
