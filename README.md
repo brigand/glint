@@ -16,7 +16,7 @@ Note: Windows binaries have only been tested in cmd.exe on Windows 10.
 Alternatively [install the rust toolchain][rustup], restart your shell, and run the following:
 
 ```sh
-cargo install glint
+cargo install glint --locked
 ```
 
 Assuming ~/.cargo/bin is in your PATH (which the installer does by default), you should be able to run `glint` and get usage information.
