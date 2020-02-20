@@ -1,4 +1,7 @@
-use crossterm::{self as ct, style::{Color,Print,style, StyledContent}, };
+use crossterm::{
+    self as ct,
+    style::{style, Color, Print, StyledContent},
+};
 
 pub fn reset() -> Color {
     Color::Reset

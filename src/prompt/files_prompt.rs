@@ -39,7 +39,6 @@ impl<'a> FilesPrompt<'a> {
     pub fn run(mut self) -> FilesPromptResult {
         let mut buffer = TermBuffer::new();
 
-
         let figlet = self
             .config
             .get_figlet()

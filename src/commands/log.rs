@@ -1,8 +1,8 @@
 use crate::cli;
 use crossterm as ct;
-use crossterm::style::{Print, SetForegroundColor as SetFg, Color};
+use crossterm::style::{Color, Print, SetForegroundColor as SetFg};
 use glint::string;
-use glint::{Git, Config};
+use glint::{Config, Git};
 use std::io::Write as _Write;
 use std::{io, iter};
 

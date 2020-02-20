@@ -1,4 +1,4 @@
-use crossterm::style::{self,Color};
+use crossterm::style::{self, Color};
 use std::fs::read_to_string;
 use std::io;
 use std::path::Path;
