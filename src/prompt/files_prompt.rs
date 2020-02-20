@@ -2,7 +2,12 @@ use crate::color::reset_display;
 use crate::git::{Git, GitStatus};
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{self as ct, style, InputEvent, KeyEvent};
+use crossterm::{
+    self as ct,
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    style::{style, Color},
+    terminal,
+};
 use std::iter;
 
 #[derive(Debug)]
@@ -34,8 +39,6 @@ impl<'a> FilesPrompt<'a> {
     pub fn run(mut self) -> FilesPromptResult {
         let mut buffer = TermBuffer::new();
 
-        let input = crossterm::input();
-        let mut sync_stdin = input.read_sync();
 
         let figlet = self
             .config
@@ -48,17 +51,22 @@ impl<'a> FilesPrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                match sync_stdin.next() {
-                    Some(e) => Some(e),
+                match event::read() {
+                    Ok(Event::Key(KeyEvent { code, modifiers })) => Some((
+                        code,
+                        modifiers.contains(KeyModifiers::CONTROL),
+                        modifiers.contains(KeyModifiers::SHIFT),
+                        modifiers.contains(KeyModifiers::ALT),
+                    )),
                     _ => continue,
                 }
             };
 
             match event {
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
+                Some((KeyCode::Char('c'), true, false, false)) => {
                     return FilesPromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char(' '))) => {
+                Some((KeyCode::Char(' '), false, _, false)) => {
                     let index = self.selected_index as usize;
                     if index == 0 {
                         let set_to = !self.checked.iter().all(|&x| x);
@@ -70,7 +78,8 @@ impl<'a> FilesPrompt<'a> {
                         self.checked[index - 1] = !self.checked[index - 1];
                     }
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char('d'))) => {
+
+                Some((KeyCode::Char('d'), _, _, _)) => {
                     let index = self.selected_index as usize;
                     let files = if index == 0 {
                         vec![]
@@ -85,7 +94,7 @@ impl<'a> FilesPrompt<'a> {
 
                     let _r = self.git.diff_less(files);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
+                Some((KeyCode::Enter, _, _, _)) => {
                     let selected = self
                         .options
                         .iter()
@@ -96,16 +105,24 @@ impl<'a> FilesPrompt<'a> {
                     return FilesPromptResult::Files(selected);
                 }
 
-                Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
+                Some((KeyCode::Esc, _, _, _)) => {
                     return FilesPromptResult::Escape;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Up)) => {
+                Some((KeyCode::Up, _, _, true)) => {
+                    self.selected_index = 0;
+                }
+                Some((KeyCode::Up, _, _, false)) => {
                     self.selected_index = match self.selected_index {
                         0 => 0,
                         x => x.saturating_sub(1),
                     };
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Down)) => {
+                Some((KeyCode::Down, _, _, true)) => {
+                    let total = self.options.len() as u16 + 1;
+
+                    self.selected_index += total.saturating_sub(1);
+                }
+                Some((KeyCode::Down, _, _, false)) => {
                     let total = self.options.len() as u16 + 1;
 
                     self.selected_index += 1;
@@ -119,7 +136,7 @@ impl<'a> FilesPrompt<'a> {
 
             let mut header = figlet.create_vec();
             figlet.write_to_buf_color("<glint>", header.as_mut_slice(), |s| {
-                ct::style(s).with(ct::Color::Magenta).to_string()
+                style(s).with(Color::Magenta).to_string()
             });
 
             for line in header {
@@ -134,7 +151,7 @@ impl<'a> FilesPrompt<'a> {
 
             let y_offset = buffer.lines() + self.selected_index;
 
-            let selected_color = style("").with(ct::Color::Blue).to_string();
+            let selected_color = style("").with(Color::Blue).to_string();
 
             // Padded limit (never overflows by 1 item)
             let total = self.options.len();

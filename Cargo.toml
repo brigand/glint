@@ -10,7 +10,7 @@ documentation="https://docs.rs/glint"
 license = "MIT"
 
 [dependencies]
-crossterm = "0.11"
+crossterm = "0.16"
 unic-segment = "0.9"
 structopt = "0.3"
 # Considering using this for `git diff`

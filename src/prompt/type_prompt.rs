@@ -1,7 +1,12 @@
 use crate::color::reset_display;
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{self as ct, style, InputEvent, KeyEvent};
+use crossterm::{
+    self as ct,
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    style::{style, Color},
+    terminal,
+};
 
 #[derive(Debug)]
 pub struct TypePrompt<'a> {
@@ -55,9 +60,6 @@ impl<'a> TypePrompt<'a> {
     pub fn run(mut self) -> TypePromptResult {
         let mut buffer = TermBuffer::new();
 
-        let input = crossterm::input();
-        let mut sync_stdin = input.read_sync();
-
         let figlet = self
             .config
             .get_figlet()
@@ -69,32 +71,37 @@ impl<'a> TypePrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                match sync_stdin.next() {
-                    Some(e) => Some(e),
+                match event::read() {
+                    Ok(Event::Key(KeyEvent { code, modifiers })) => Some((
+                        code,
+                        modifiers.contains(KeyModifiers::CONTROL),
+                        modifiers.contains(KeyModifiers::SHIFT),
+                        modifiers.contains(KeyModifiers::ALT),
+                    )),
                     _ => continue,
                 }
             };
 
             match event {
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
+                Some((KeyCode::Char('c'), true, false, false)) => {
                     return TypePromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
+                Some((KeyCode::Enter, false, false, false)) => {
                     return TypePromptResult::Type(self.get_at_selected_index().to_string());
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
+                Some((KeyCode::Char(c), false, _, false)) => {
                     self.input.push(c.to_ascii_lowercase());
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Backspace)) => {
+                Some((KeyCode::Backspace, false, _, false)) => {
                     self.input.pop();
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
+                Some((KeyCode::Esc, false, _, false)) => {
                     return TypePromptResult::Escape;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Up)) => {
+                Some((KeyCode::Up, false, _, false)) => {
                     self.selected_index = self.selected_index.saturating_sub(1);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Down)) => {
+                Some((KeyCode::Down, false, _, false)) => {
                     self.selected_index += 1;
                 }
                 None => {}
@@ -108,7 +115,7 @@ impl<'a> TypePrompt<'a> {
 
             let mut header = figlet.create_vec();
             figlet.write_to_buf_color("<glint>", header.as_mut_slice(), |s| {
-                ct::style(s).with(ct::Color::Magenta).to_string()
+                style(s).with(Color::Magenta).to_string()
             });
 
             let y_offset = header.len() as u16;
@@ -132,7 +139,7 @@ impl<'a> TypePrompt<'a> {
                 x as u16
             };
 
-            let active = style("*").with(ct::Color::Blue).to_string();
+            let active = style("*").with(Color::Blue).to_string();
             for (i, ty) in types.into_iter().enumerate() {
                 let prefix = if i as u16 == self.selected_index {
                     &active as &str

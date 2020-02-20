@@ -1,4 +1,9 @@
 use crossterm as ct;
+use crossterm::{
+    cursor::{MoveDown, MoveLeft, MoveRight, MoveUp},
+    style::Print,
+    terminal::{Clear, ClearType},
+};
 use std::io::{self, Write as _W};
 
 // If the number of changed lines is larger than this, then
@@ -32,7 +37,7 @@ impl Drop for TermBuffer {
         }
         self.cursor_to_end();
 
-        ct::queue!(self.stdout, ct::Output("\n".to_string())).unwrap();
+        ct::queue!(self.stdout, Print("\n".to_string())).unwrap();
         self.flush();
     }
 }
@@ -113,12 +118,12 @@ impl TermBuffer {
     fn queue_move_cursor_y(&mut self, down: isize) {
         if down > 0 {
             let down = down as u16;
-            ct::queue!(self.stdout, ct::Down(down), ct::Left(1000)).unwrap();
+            ct::queue!(self.stdout, MoveDown(down), MoveLeft(1000)).unwrap();
         } else if down < 0 {
             let up = (-down) as u16;
-            ct::queue!(self.stdout, ct::Up(up), ct::Left(1000)).unwrap();
+            ct::queue!(self.stdout, MoveUp(up), MoveLeft(1000)).unwrap();
         } else {
-            ct::queue!(self.stdout, ct::Left(1000)).unwrap();
+            ct::queue!(self.stdout, MoveLeft(1000)).unwrap();
         }
     }
 
@@ -132,18 +137,18 @@ impl TermBuffer {
 
         let (dx, dy) = state.cursor;
 
-        ct::queue!(self.stdout, ct::Clear(ct::ClearType::UntilNewLine)).unwrap();
+        ct::queue!(self.stdout, Clear(ClearType::UntilNewLine)).unwrap();
 
-        ct::queue!(self.stdout, ct::Output(state.rows[line_index].to_string())).unwrap();
+        ct::queue!(self.stdout, Print(state.rows[line_index].to_string())).unwrap();
 
         // This can be enabled to track which lines are updated
-        // ct::queue!(self.stdout, ct::Output(" ø".to_string())).unwrap();
+        // ct::queue!(self.stdout, Print(" ø".to_string())).unwrap();
 
-        ct::queue!(self.stdout, ct::Left(1000)).unwrap();
+        ct::queue!(self.stdout, MoveLeft(1000)).unwrap();
 
         self.queue_move_cursor_y(dy as isize - new_y as isize);
         if dx > 0 {
-            ct::queue!(self.stdout, ct::Right(dx)).unwrap();
+            ct::queue!(self.stdout, MoveRight(dx)).unwrap();
         }
         self.flushed.cursor = (0, dy);
     }
@@ -158,9 +163,9 @@ impl TermBuffer {
         for item in state.rows.iter() {
             ct::queue!(
                 self.stdout,
-                ct::Output(item.to_string()),
-                ct::Output("\n".to_string()),
-                ct::Left(1000)
+                Print(item.to_string()),
+                Print("\n".to_string()),
+                Print(1000)
             )
             .unwrap();
         }
@@ -168,14 +173,14 @@ impl TermBuffer {
         let (cx, cy) = (0, state.len() as u16);
         let (dx, dy) = state.get_cursor();
         if dy < cy {
-            ct::queue!(self.stdout, ct::Up(cy - dy)).unwrap();
+            ct::queue!(self.stdout, MoveUp(cy - dy)).unwrap();
         } else if dy > cy {
-            ct::queue!(self.stdout, ct::Down(dy - cy)).unwrap();
+            ct::queue!(self.stdout, MoveDown(dy - cy)).unwrap();
         }
         if dx < cx {
-            ct::queue!(self.stdout, ct::Left(cx - dx)).unwrap();
+            ct::queue!(self.stdout, MoveLeft(cx - dx)).unwrap();
         } else if dx > cx {
-            ct::queue!(self.stdout, ct::Right(dx - cx)).unwrap();
+            ct::queue!(self.stdout, MoveRight(dx - cx)).unwrap();
         }
 
         ct::queue!(self.stdout, crate::color::reset_item()).unwrap();
@@ -195,10 +200,10 @@ impl TermBuffer {
         let move_down = down > 0;
         let move_left = cursor_x > 0;
         if move_down {
-            ct::queue!(self.stdout, ct::Down(down)).unwrap();
+            ct::queue!(self.stdout, MoveDown(down)).unwrap();
         }
         if move_left {
-            ct::queue!(self.stdout, ct::Left(cursor_x)).unwrap();
+            ct::queue!(self.stdout, MoveLeft(cursor_x)).unwrap();
         }
 
         if move_down || move_left {
@@ -208,17 +213,17 @@ impl TermBuffer {
 
     /// Clears from the cursor position down
     fn queue_clear(&mut self) {
-        ct::queue!(self.stdout, ct::Clear(ct::ClearType::FromCursorDown)).unwrap();
+        ct::queue!(self.stdout, Clear(ClearType::FromCursorDown)).unwrap();
     }
 
     fn cursor_to_start(&mut self) {
         let (_, y) = self.flushed.cursor;
 
         // if x > 0 {
-        ct::queue!(self.stdout, ct::Left(1000)).unwrap();
+        ct::queue!(self.stdout, MoveLeft(1000)).unwrap();
         // }
         if y > 0 {
-            ct::queue!(self.stdout, ct::Up(y)).unwrap();
+            ct::queue!(self.stdout, MoveUp(y)).unwrap();
         }
     }
 }
