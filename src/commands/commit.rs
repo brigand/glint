@@ -1,5 +1,5 @@
 use crate::cli;
-use crossterm::{self as ct, cursor, style, terminal};
+use crossterm::{self as ct, cursor, terminal};
 use glint::{prompt, Commit, Config, Git};
 use std::io::Write as _Write;
 
@@ -12,7 +12,7 @@ fn with_raw<R>(f: impl FnOnce() -> R) -> R {
         Ok(_) => f(),
     };
 
-    terminal::disable_raw_mode();
+    let _r = terminal::disable_raw_mode();
 
     result
 }

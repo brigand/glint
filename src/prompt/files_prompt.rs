@@ -3,10 +3,8 @@ use crate::git::{Git, GitStatus};
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{
-    self as ct,
     event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
     style::{style, Color},
-    terminal,
 };
 use std::iter;
 

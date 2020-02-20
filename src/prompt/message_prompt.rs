@@ -2,10 +2,8 @@ use crate::string::{self, next_word_grapheme, prev_word_grapheme, to_byte_offset
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{
-    self as ct,
     event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
     style::{style, Color},
-    terminal,
 };
 
 #[derive(Debug)]

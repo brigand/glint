@@ -165,7 +165,7 @@ impl TermBuffer {
                 self.stdout,
                 Print(item.to_string()),
                 Print("\n".to_string()),
-                Print(1000)
+                MoveLeft(1000)
             )
             .unwrap();
         }

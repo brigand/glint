@@ -2,10 +2,8 @@ use crate::color::reset_display;
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{
-    self as ct,
     event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
     style::{style, Color},
-    terminal,
 };
 
 #[derive(Debug)]
