@@ -38,7 +38,7 @@ pub fn log(params: cli::Log, _config: Config) {
         };
 
         let message = message
-            .split("\n")
+            .split('\n')
             .filter(|s| s.chars().any(|c| !c.is_whitespace()))
             .collect::<Vec<&str>>()
             .join(" ⏎");
@@ -71,7 +71,7 @@ pub fn log(params: cli::Log, _config: Config) {
                 }),
                 ct::SetFg(ct::Color::Reset),
                 ct::Output(message),
-                ct::Output("\n".into())
+                ct::Output('\n'.to_string())
             )
             .unwrap();
         }

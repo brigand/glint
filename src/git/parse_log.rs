@@ -28,7 +28,7 @@ fn bytes_until_non_ws(s: &str) -> usize {
 impl LogItem {
     /// Parse the message into the components (type, scope, message). Always returns
     /// slices of the original message.
-    pub fn as_conventional<'a>(&'a self) -> Option<Conventional<'a>> {
+    pub fn as_conventional(&self) -> Option<Conventional> {
         let mut ty_pos = None;
         let mut scope_pos = None;
         let mut message_pos = None;
@@ -143,7 +143,7 @@ impl Parser {
             }
             PreMessage { commit, epoch_secs } => {
                 let message = if starts_four_spaces {
-                    let (i, _) = line.char_indices().skip(4).next().unwrap();
+                    let (i, _) = line.char_indices().nth(4).unwrap();
                     liner[i..].to_string()
                 } else {
                     line
@@ -164,7 +164,7 @@ impl Parser {
                 mut files,
             } => {
                 let msg_addition = if starts_four_spaces {
-                    line.char_indices().skip(4).next().map(|(i, _)| &liner[i..])
+                    line.char_indices().nth(4).map(|(i, _)| &liner[i..])
                 } else {
                     None
                 };
@@ -190,7 +190,7 @@ impl Parser {
                         message,
                         files,
                     }
-                } else if line.starts_with(":") {
+                } else if line.starts_with(':') {
                     if let Some(name) = liner.split_whitespace().last() {
                         files.push(name.to_string());
                     }
@@ -221,7 +221,7 @@ impl Parser {
     }
 }
 
-pub fn parse_logs<'a>(lines: impl Iterator<Item = String>) -> Vec<LogItem> {
+pub fn parse_logs(lines: impl Iterator<Item = String>) -> Vec<LogItem> {
     let mut parser = Parser::SeekingHeader;
     let mut items = vec![];
 
