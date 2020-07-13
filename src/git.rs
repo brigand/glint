@@ -29,6 +29,7 @@ pub struct GitStatusItem {
 pub enum GitStatusType {
     Added,
     Modified,
+    Renamed,
     Untracked,
     Deleted,
 }
@@ -246,6 +247,7 @@ impl GitStatusType {
         match ch {
             'A' => Some(GitStatusType::Added),
             'M' => Some(GitStatusType::Modified),
+            'R' => Some(GitStatusType::Renamed),
             'D' => Some(GitStatusType::Deleted),
             '?' => Some(GitStatusType::Untracked),
             _ => None,
