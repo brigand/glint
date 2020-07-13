@@ -9,7 +9,7 @@ use std::iter;
 pub struct FilesPrompt<'a> {
     config: &'a Config,
     checked: Vec<bool>,
-    selected_index: u16,
+    highlighted_index: u16,
     options: GitStatus,
     git: &'a Git,
 }
@@ -25,7 +25,7 @@ impl<'a> FilesPrompt<'a> {
         FilesPrompt {
             config,
             checked: (0..options.len()).map(|_| false).collect(),
-            selected_index: 0,
+            highlighted_index: 0,
             options,
             git,
         }
@@ -59,7 +59,7 @@ impl<'a> FilesPrompt<'a> {
                     return FilesPromptResult::Terminate;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char(' '))) => {
-                    let index = self.selected_index as usize;
+                    let index = self.highlighted_index as usize;
                     if index == 0 {
                         let set_to = !self.checked.iter().all(|&x| x);
 
@@ -71,7 +71,7 @@ impl<'a> FilesPrompt<'a> {
                     }
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Char('d'))) => {
-                    let index = self.selected_index as usize;
+                    let index = self.highlighted_index as usize;
                     let files = if index == 0 {
                         vec![]
                     } else {
@@ -100,7 +100,7 @@ impl<'a> FilesPrompt<'a> {
                     return FilesPromptResult::Escape;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Up)) => {
-                    self.selected_index = match self.selected_index {
+                    self.highlighted_index = match self.highlighted_index {
                         0 => 0,
                         x => x.saturating_sub(1),
                     };
@@ -108,9 +108,9 @@ impl<'a> FilesPrompt<'a> {
                 Some(InputEvent::Keyboard(KeyEvent::Down)) => {
                     let total = self.options.len() as u16 + 1;
 
-                    self.selected_index += 1;
-                    if self.selected_index >= total {
-                        self.selected_index = total.saturating_sub(1);
+                    self.highlighted_index += 1;
+                    if self.highlighted_index >= total {
+                        self.highlighted_index = total.saturating_sub(1);
                     }
                 }
                 None => {}
@@ -132,9 +132,9 @@ impl<'a> FilesPrompt<'a> {
             buffer.push_line(prompt_pre);
             buffer.push_line(format!("{}{}", underscores, reset_display()));
 
-            let y_offset = buffer.lines() + self.selected_index;
+            let y_offset = buffer.lines() + self.highlighted_index;
 
-            let selected_color = style("").with(ct::Color::Blue).to_string();
+            let highlighted_color = style("").with(ct::Color::Blue).to_string();
 
             // Padded limit (never overflows by 1 item)
             let total = self.options.len();
@@ -146,8 +146,8 @@ impl<'a> FilesPrompt<'a> {
                 .enumerate()
                 .take(take + 1)
             {
-                let color = if i as u16 == self.selected_index {
-                    &selected_color as &str
+                let color = if i as u16 == self.highlighted_index {
+                    &highlighted_color as &str
                 } else {
                     ""
                 };
