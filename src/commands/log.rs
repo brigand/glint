@@ -71,7 +71,7 @@ pub fn log(params: cli::Log, _config: Config) {
                 }),
                 ct::SetFg(ct::Color::Reset),
                 ct::Output(message),
-                ct::Output('\n'.into())
+                ct::Output('\n'.to_string())
             )
             .unwrap();
         }
