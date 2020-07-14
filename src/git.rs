@@ -32,6 +32,7 @@ pub enum GitStatusType {
     Renamed,
     Untracked,
     Deleted,
+    None,
 }
 
 #[derive(Debug)]
@@ -225,8 +226,22 @@ impl GitStatus {
 }
 
 impl GitStatusItem {
+    pub fn new(file: String) -> Self {
+        GitStatusItem {
+            file,
+            staged: None,
+            unstaged: None,
+        }
+    }
     pub fn file(&self) -> &str {
         &self.file
+    }
+    pub fn status(&self) -> &GitStatusType {
+        if self.unstaged.is_some() {
+            self.unstaged.as_ref().unwrap()
+        } else {
+            &GitStatusType::None
+        }
     }
 }
 

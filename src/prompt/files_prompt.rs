@@ -1,5 +1,5 @@
 use crate::color::reset_display;
-use crate::git::{Git, GitStatus};
+use crate::git::{Git, GitStatus, GitStatusItem, GitStatusType};
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{self as ct, style, InputEvent, KeyEvent};
@@ -135,22 +135,30 @@ impl<'a> FilesPrompt<'a> {
             let y_offset = buffer.lines() + self.highlighted_index;
 
             let highlighted_color = style("").with(ct::Color::Blue).to_string();
+            let modified_color = style("").with(ct::Color::Rgb { r: 96, g: 112, b: 218 }).to_string();
+            let untracked_color = style("").with(ct::Color::Rgb { r: 96, g: 218, b: 177}).to_string();
+            let deleted_color = style("").with(ct::Color::Rgb { r: 218, g: 96, b: 118}).to_string();
 
             // Padded limit (never overflows by 1 item)
             let total = self.options.len();
             let max = 15;
             let take = if total > max { max - 3 } else { total };
 
-            for (i, label) in iter::once("<all>")
-                .chain(self.options.iter().map(|item| item.file()))
+            for (i, git_status_item) in iter::once(&GitStatusItem::new("<all>".to_owned()))
+                .chain(self.options.iter().map(|item| item))
                 .enumerate()
                 .take(take + 1)
             {
-                let color = if i as u16 == self.highlighted_index {
-                    &highlighted_color as &str
-                } else {
-                    ""
+                let mut color = match git_status_item.status() {
+                    &GitStatusType::Modified => &modified_color as &str,
+                    &GitStatusType::Untracked => &untracked_color as &str,
+                    &GitStatusType::Deleted => &deleted_color as &str,
+                    _ => ""
                 };
+
+                if i as u16 == self.highlighted_index {
+                    color = &highlighted_color as &str
+                }
 
                 let checked = if i == 0 {
                     self.checked.iter().all(|&x| x)
@@ -159,7 +167,7 @@ impl<'a> FilesPrompt<'a> {
                 };
                 let prefix = if checked { "☑" } else { "□" };
 
-                let line = format!("{}{} {}{}", color, prefix, label, reset_display());
+                let line = format!("{}{} {}{}", color, prefix, git_status_item.file(), reset_display());
                 buffer.push_line(line);
             }
 
