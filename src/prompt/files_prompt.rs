@@ -134,10 +134,13 @@ impl<'a> FilesPrompt<'a> {
 
             let y_offset = buffer.lines() + self.focused_index;
 
-            let focused_color = style("").with(ct::Color::Blue).to_string();
-            let modified_color = style("").with(ct::Color::Rgb { r: 96, g: 112, b: 218 }).to_string();
-            let untracked_color = style("").with(ct::Color::Rgb { r: 96, g: 218, b: 177}).to_string();
-            let deleted_color = style("").with(ct::Color::Rgb { r: 218, g: 96, b: 118}).to_string();
+            let focused_color = ct::Color::Blue;
+            let default_color = ct::Color::White;
+
+            let status_untracked = style('+').with(ct::Color::Rgb { r: 96, g: 218, b: 177 });
+            let status_modified = style('/').with(ct::Color::Rgb { r: 96, g: 112, b: 218 });
+            let status_deleted = style('-').with(ct::Color::Rgb { r: 218, g: 96, b: 118 });
+            let status_none = style(' ').with(default_color);
 
             // Padded limit (never overflows by 1 item)
             let total = self.options.len();
@@ -149,25 +152,31 @@ impl<'a> FilesPrompt<'a> {
                 .enumerate()
                 .take(take + 1)
             {
-                let mut color = match git_status_item.status() {
-                    &GitStatusType::Modified => &modified_color as &str,
-                    &GitStatusType::Untracked => &untracked_color as &str,
-                    &GitStatusType::Deleted => &deleted_color as &str,
-                    _ => ""
-                };
-
-                if i as u16 == self.focused_index {
-                    color = &focused_color as &str
-                }
+                let line_color = if i as u16 == self.focused_index { focused_color } else { default_color };
 
                 let checked = if i == 0 {
                     self.checked.iter().all(|&x| x)
                 } else {
                     self.checked[i - 1]
                 };
-                let prefix = if checked { "☑" } else { "□" };
+                let prefix = style(if checked { '☑' } else { '□' }).with(line_color);
 
-                let line = format!("{}{} {}{}", color, prefix, git_status_item.file_name(), reset_display());
+                let file_status = match *git_status_item.status() {
+                    GitStatusType::Untracked => &status_untracked,
+                    GitStatusType::Modified => &status_modified,
+                    GitStatusType::Deleted => &status_deleted,
+                    _ => &status_none,
+                };
+
+                let file_name = style(git_status_item.file_name()).with(line_color);
+
+                let line = format!(
+                    "{} {} {}{}",
+                    prefix,
+                    file_status,
+                    file_name,
+                    reset_display()
+                );
                 buffer.push_line(line);
             }
 
