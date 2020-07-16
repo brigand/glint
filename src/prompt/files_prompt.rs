@@ -140,7 +140,7 @@ impl<'a> FilesPrompt<'a> {
             let status_untracked = style('+').with(ct::Color::Rgb { r: 96, g: 218, b: 177 });
             let status_modified = style('•').with(ct::Color::Rgb { r: 96, g: 112, b: 218 });
             let status_deleted = style('-').with(ct::Color::Rgb { r: 218, g: 96, b: 118 });
-            let status_none = style(' ').with(default_color);
+            let status_none = style(' ');
 
             // Padded limit (never overflows by 1 item)
             let total = self.options.len();
