@@ -135,7 +135,7 @@ impl<'a> FilesPrompt<'a> {
             let y_offset = buffer.lines() + self.focused_index;
 
             let focused_color = ct::Color::Blue;
-            let default_color = ct::Color::White;
+            let default_color = ct::Color::Reset;
 
             let status_untracked = style('+').with(ct::Color::Rgb { r: 96, g: 218, b: 177 });
             let status_modified = style('•').with(ct::Color::Rgb { r: 96, g: 112, b: 218 });
