@@ -20,7 +20,7 @@ pub struct GitStatus(pub Vec<GitStatusItem>);
 
 #[derive(Debug, Clone)]
 pub struct GitStatusItem {
-    file: String,
+    file_name: String,
     staged: Option<GitStatusType>,
     unstaged: Option<GitStatusType>,
 }
@@ -32,6 +32,7 @@ pub enum GitStatusType {
     Renamed,
     Untracked,
     Deleted,
+    None,
 }
 
 #[derive(Debug)]
@@ -195,7 +196,7 @@ impl Git {
                     None
                 } else {
                     Some(GitStatusItem {
-                        file,
+                        file_name: file,
                         staged,
                         unstaged,
                     })
@@ -225,8 +226,18 @@ impl GitStatus {
 }
 
 impl GitStatusItem {
-    pub fn file(&self) -> &str {
-        &self.file
+    pub fn new(file_name: String) -> Self {
+        GitStatusItem {
+            file_name,
+            staged: None,
+            unstaged: None,
+        }
+    }
+    pub fn file_name(&self) -> &str {
+        &self.file_name
+    }
+    pub fn status(&self) -> &GitStatusType {
+        self.unstaged.as_ref().unwrap_or(&GitStatusType::None)
     }
 }
 
@@ -238,7 +249,7 @@ impl Into<String> for GitStatusItem {
 
 impl Into<String> for &'_ GitStatusItem {
     fn into(self) -> String {
-        self.file().into()
+        self.file_name().into()
     }
 }
 

@@ -23,7 +23,7 @@ fn main() {
                     break;
                 }
                 println!("{:?}", ev);
-                ct::cursor().move_left(100);
+                ct::cursor().move_left(100).unwrap();
             }
         }
     })
