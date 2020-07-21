@@ -7,7 +7,7 @@ use crossterm::{self as ct, style, InputEvent, KeyEvent};
 pub struct TypePrompt<'a> {
     config: &'a Config,
     input: String,
-    selected_index: u16,
+    focused_index: u16,
 }
 
 pub enum TypePromptResult {
@@ -21,7 +21,7 @@ impl<'a> TypePrompt<'a> {
         TypePrompt {
             config,
             input: Default::default(),
-            selected_index: 0,
+            focused_index: 0,
         }
     }
 
@@ -31,7 +31,7 @@ impl<'a> TypePrompt<'a> {
     fn get_at_selected_index(&self) -> &str {
         let options = self.filter_types();
         options
-            .get(self.selected_index as usize)
+            .get(self.focused_index as usize)
             .or_else(|| options.last())
             .copied()
             .unwrap_or("misc")
@@ -92,10 +92,10 @@ impl<'a> TypePrompt<'a> {
                     return TypePromptResult::Escape;
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Up)) => {
-                    self.selected_index = self.selected_index.saturating_sub(1);
+                    self.focused_index = self.focused_index.saturating_sub(1);
                 }
                 Some(InputEvent::Keyboard(KeyEvent::Down)) => {
-                    self.selected_index += 1;
+                    self.focused_index += 1;
                 }
                 None => {}
                 _ => continue,
@@ -134,7 +134,7 @@ impl<'a> TypePrompt<'a> {
 
             let active = style("*").with(ct::Color::Blue).to_string();
             for (i, ty) in types.into_iter().enumerate() {
-                let prefix = if i as u16 == self.selected_index {
+                let prefix = if i as u16 == self.focused_index {
                     &active as &str
                 } else {
                     "-"
