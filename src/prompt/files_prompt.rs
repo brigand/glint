@@ -1,5 +1,5 @@
 use crate::color::reset_display;
-use crate::git::{Git, GitStatus};
+use crate::git::{Git, GitStatus, GitStatusItem, GitStatusType};
 use crate::Config;
 use crate::TermBuffer;
 use crossterm::{
@@ -12,7 +12,7 @@ use std::iter;
 pub struct FilesPrompt<'a> {
     config: &'a Config,
     checked: Vec<bool>,
-    selected_index: u16,
+    focused_index: u16,
     options: GitStatus,
     git: &'a Git,
 }
@@ -28,7 +28,7 @@ impl<'a> FilesPrompt<'a> {
         FilesPrompt {
             config,
             checked: (0..options.len()).map(|_| false).collect(),
-            selected_index: 0,
+            focused_index: 0,
             options,
             git,
         }
@@ -64,7 +64,7 @@ impl<'a> FilesPrompt<'a> {
                     return FilesPromptResult::Terminate;
                 }
                 Some((KeyCode::Char(' '), false, _, false)) => {
-                    let index = self.selected_index as usize;
+                    let index = self.focused_index as usize;
                     if index == 0 {
                         let set_to = !self.checked.iter().all(|&x| x);
 
@@ -77,7 +77,7 @@ impl<'a> FilesPrompt<'a> {
                 }
 
                 Some((KeyCode::Char('d'), _, _, _)) => {
-                    let index = self.selected_index as usize;
+                    let index = self.focused_index as usize;
                     let files = if index == 0 {
                         vec![]
                     } else {
@@ -86,7 +86,7 @@ impl<'a> FilesPrompt<'a> {
                             .iter()
                             .nth(index - 1)
                             .expect("diff should match a file");
-                        vec![option.file().to_string()]
+                        vec![option.file_name().to_string()]
                     };
 
                     let _r = self.git.diff_less(files);
@@ -106,10 +106,10 @@ impl<'a> FilesPrompt<'a> {
                     return FilesPromptResult::Escape;
                 }
                 Some((KeyCode::Up, _, _, true)) => {
-                    self.selected_index = 0;
+                    self.focused_index = 0;
                 }
                 Some((KeyCode::Up, _, _, false)) => {
-                    self.selected_index = match self.selected_index {
+                    self.focused_index = match self.focused_index {
                         0 => 0,
                         x => x.saturating_sub(1),
                     };
@@ -117,14 +117,14 @@ impl<'a> FilesPrompt<'a> {
                 Some((KeyCode::Down, _, _, true)) => {
                     let total = self.options.len() as u16 + 1;
 
-                    self.selected_index += total.saturating_sub(1);
+                    self.focused_index += total.saturating_sub(1);
                 }
                 Some((KeyCode::Down, _, _, false)) => {
                     let total = self.options.len() as u16 + 1;
 
-                    self.selected_index += 1;
-                    if self.selected_index >= total {
-                        self.selected_index = total.saturating_sub(1);
+                    self.focused_index += 1;
+                    if self.focused_index >= total {
+                        self.focused_index = total.saturating_sub(1);
                     }
                 }
                 None => {}
@@ -146,24 +146,42 @@ impl<'a> FilesPrompt<'a> {
             buffer.push_line(prompt_pre);
             buffer.push_line(format!("{}{}", underscores, reset_display()));
 
-            let y_offset = buffer.lines() + self.selected_index;
+            let y_offset = buffer.lines() + self.focused_index;
 
-            let selected_color = style("").with(Color::Blue).to_string();
+            let focused_color = Color::Blue;
+            let default_color = Color::Reset;
+
+            let status_untracked = style('+').with(Color::Rgb {
+                r: 96,
+                g: 218,
+                b: 177,
+            });
+            let status_modified = style('•').with(Color::Rgb {
+                r: 96,
+                g: 112,
+                b: 218,
+            });
+            let status_deleted = style('-').with(Color::Rgb {
+                r: 218,
+                g: 96,
+                b: 118,
+            });
+            let status_none = style(' ');
 
             // Padded limit (never overflows by 1 item)
             let total = self.options.len();
             let max = 15;
             let take = if total > max { max - 3 } else { total };
 
-            for (i, label) in iter::once("<all>")
-                .chain(self.options.iter().map(|item| item.file()))
+            for (i, git_status_item) in iter::once(&GitStatusItem::new("<all>".to_owned()))
+                .chain(self.options.iter().map(|item| item))
                 .enumerate()
                 .take(take + 1)
             {
-                let color = if i as u16 == self.selected_index {
-                    &selected_color as &str
+                let line_color = if i as u16 == self.focused_index {
+                    focused_color
                 } else {
-                    ""
+                    default_color
                 };
 
                 let checked = if i == 0 {
@@ -171,9 +189,24 @@ impl<'a> FilesPrompt<'a> {
                 } else {
                     self.checked[i - 1]
                 };
-                let prefix = if checked { "☑" } else { "□" };
+                let prefix = style(if checked { '☑' } else { '□' }).with(line_color);
 
-                let line = format!("{}{} {}{}", color, prefix, label, reset_display());
+                let file_status = match *git_status_item.status() {
+                    GitStatusType::Untracked => &status_untracked,
+                    GitStatusType::Modified => &status_modified,
+                    GitStatusType::Deleted => &status_deleted,
+                    _ => &status_none,
+                };
+
+                let file_name = style(git_status_item.file_name()).with(line_color);
+
+                let line = format!(
+                    "{} {} {}{}",
+                    prefix,
+                    file_status,
+                    file_name,
+                    reset_display()
+                );
                 buffer.push_line(line);
             }
 

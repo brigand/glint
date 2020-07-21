@@ -1,4 +1,4 @@
-use crossterm as ct;
+use crossterm::style::{style, Color};
 use glint::figlet;
 use std::fs::read_to_string;
 
@@ -11,13 +11,13 @@ pub fn main() {
     // println!("{:#?}", font);
 
     font.write_to_buf_color("feat", &mut output[..], |s| {
-        ct::style(s).with(ct::Color::Red).to_string()
+        style(s).with(Color::Red).to_string()
     });
 
     font.write_to_buf("(", &mut output[..]);
 
     font.write_to_buf_color("client", &mut output[..], |s| {
-        ct::style(s).with(ct::Color::Blue).to_string()
+        style(s).with(Color::Blue).to_string()
     });
 
     font.write_to_buf(")", &mut output[..]);

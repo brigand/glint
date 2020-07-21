@@ -95,7 +95,6 @@ impl<'a> MessagePrompt<'a> {
                     let line = &self.input.get(y as usize).expect("current line must exist");
                     self.cursor.0 = prev_word_grapheme(line, x as usize) as u16;
                 }
-                // Alt-Right
                 Some((KeyCode::Right, false, _, true))
                 | Some((KeyCode::Char('f'), false, _, true)) => {
                     let (x, y) = self.cursor;

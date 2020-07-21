@@ -1,9 +1,10 @@
-use crossterm as ct;
 use crossterm::{
+    self as ct,
     cursor::{MoveDown, MoveLeft, MoveRight, MoveUp},
     style::Print,
     terminal::{Clear, ClearType},
 };
+use std::cmp::Ordering;
 use std::io::{self, Write as _W};
 
 // If the number of changed lines is larger than this, then
@@ -116,14 +117,16 @@ impl TermBuffer {
     }
 
     fn queue_move_cursor_y(&mut self, down: isize) {
-        if down > 0 {
-            let down = down as u16;
-            ct::queue!(self.stdout, MoveDown(down), MoveLeft(1000)).unwrap();
-        } else if down < 0 {
-            let up = (-down) as u16;
-            ct::queue!(self.stdout, MoveUp(up), MoveLeft(1000)).unwrap();
-        } else {
-            ct::queue!(self.stdout, MoveLeft(1000)).unwrap();
+        match down.cmp(&0) {
+            Ordering::Greater => {
+                let down = down as u16;
+                ct::queue!(self.stdout, MoveDown(down), MoveLeft(1000)).unwrap();
+            }
+            Ordering::Less => {
+                let up = (-down) as u16;
+                ct::queue!(self.stdout, MoveUp(up), MoveLeft(1000)).unwrap();
+            }
+            _ => ct::queue!(self.stdout, MoveLeft(1000)).unwrap(),
         }
     }
 
@@ -172,15 +175,15 @@ impl TermBuffer {
 
         let (cx, cy) = (0, state.len() as u16);
         let (dx, dy) = state.get_cursor();
-        if dy < cy {
-            ct::queue!(self.stdout, MoveUp(cy - dy)).unwrap();
-        } else if dy > cy {
-            ct::queue!(self.stdout, MoveDown(dy - cy)).unwrap();
+        match dy.cmp(&cy) {
+            Ordering::Less => ct::queue!(self.stdout, MoveUp(cy - dy)).unwrap(),
+            Ordering::Greater => ct::queue!(self.stdout, MoveDown(dy - cy)).unwrap(),
+            _ => {}
         }
-        if dx < cx {
-            ct::queue!(self.stdout, MoveLeft(cx - dx)).unwrap();
-        } else if dx > cx {
-            ct::queue!(self.stdout, MoveRight(dx - cx)).unwrap();
+        match dx.cmp(&cx) {
+            Ordering::Less => ct::queue!(self.stdout, MoveLeft(cx - dx)).unwrap(),
+            Ordering::Greater => ct::queue!(self.stdout, MoveRight(dx - cx)).unwrap(),
+            _ => {}
         }
 
         ct::queue!(self.stdout, crate::color::reset_item()).unwrap();
@@ -270,7 +273,7 @@ impl State {
     }
 
     pub fn reset(&mut self) -> Self {
-        std::mem::replace(self, State::default())
+        std::mem::take(self)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &str> {

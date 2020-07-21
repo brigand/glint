@@ -10,7 +10,7 @@ use crossterm::{
 pub struct TypePrompt<'a> {
     config: &'a Config,
     input: String,
-    selected_index: u16,
+    focused_index: u16,
 }
 
 pub enum TypePromptResult {
@@ -24,7 +24,7 @@ impl<'a> TypePrompt<'a> {
         TypePrompt {
             config,
             input: Default::default(),
-            selected_index: 0,
+            focused_index: 0,
         }
     }
 
@@ -34,7 +34,7 @@ impl<'a> TypePrompt<'a> {
     fn get_at_selected_index(&self) -> &str {
         let options = self.filter_types();
         options
-            .get(self.selected_index as usize)
+            .get(self.focused_index as usize)
             .or_else(|| options.last())
             .copied()
             .unwrap_or("misc")
@@ -97,10 +97,10 @@ impl<'a> TypePrompt<'a> {
                     return TypePromptResult::Escape;
                 }
                 Some((KeyCode::Up, false, _, false)) => {
-                    self.selected_index = self.selected_index.saturating_sub(1);
+                    self.focused_index = self.focused_index.saturating_sub(1);
                 }
                 Some((KeyCode::Down, false, _, false)) => {
-                    self.selected_index += 1;
+                    self.focused_index += 1;
                 }
                 None => {}
                 _ => continue,
@@ -130,22 +130,24 @@ impl<'a> TypePrompt<'a> {
                     "{}{}{}{}",
                     prompt_pre,
                     style(prompt_post).with(crate::color::theme_user_input()),
-                    underscores,
+                    style(underscores).with(crate::color::theme_user_input()),
                     reset_display()
                 ));
                 let x = prompt_pre.len() + prompt_post.len();
                 x as u16
             };
 
-            let active = style("*").with(Color::Blue).to_string();
+            let focused_color = Color::Blue;
+            let default_color = Color::Reset;
+
             for (i, ty) in types.into_iter().enumerate() {
-                let prefix = if i as u16 == self.selected_index {
-                    &active as &str
+                let line_content = if i as u16 == self.focused_index {
+                    style(["*", " ", ty].concat()).with(focused_color)
                 } else {
-                    "-"
+                    style(["-", " ", ty].concat()).with(default_color)
                 };
 
-                let line = format!("{} {}{}", prefix, ty, reset_display());
+                let line = format!("{}{}", line_content, reset_display());
                 buffer.push_line(line);
             }
 

@@ -1,6 +1,8 @@
 use crate::cli;
-use crossterm as ct;
-use crossterm::style::{Color, Print, SetForegroundColor as SetFg};
+use crossterm::{
+    self as ct,
+    style::{Color, Print, SetForegroundColor as SetFg},
+};
 use glint::string;
 use glint::{Config, Git};
 use std::io::Write as _Write;
@@ -40,7 +42,7 @@ pub fn log(params: cli::Log, _config: Config) {
         };
 
         let message = message
-            .split("\n")
+            .split('\n')
             .filter(|s| s.chars().any(|c| !c.is_whitespace()))
             .collect::<Vec<&str>>()
             .join(" ⏎");

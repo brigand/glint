@@ -1,5 +1,7 @@
-use crossterm as ct;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::{
+    self as ct,
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+};
 
 fn with_raw<R>(f: impl FnOnce() -> R) -> R {
     match ct::terminal::enable_raw_mode() {
@@ -7,7 +9,7 @@ fn with_raw<R>(f: impl FnOnce() -> R) -> R {
             eprintln!("Failed to convert stdio to raw mode. Can't continue.");
             std::process::exit(1);
         }
-        Ok(raw_screen) => {
+        Ok(_raw_screen) => {
             let r = f();
             let _ignored = ct::terminal::disable_raw_mode();
             r
