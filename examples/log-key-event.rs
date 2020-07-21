@@ -1,30 +1,38 @@
-use crossterm as ct;
+use crossterm::{
+    self as ct,
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+};
 
-fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
-    match ct::RawScreen::into_raw_mode() {
+fn with_raw<R>(f: impl FnOnce() -> R) -> R {
+    match ct::terminal::enable_raw_mode() {
         Err(_) => {
             eprintln!("Failed to convert stdio to raw mode. Can't continue.");
             std::process::exit(1);
         }
-        Ok(raw_screen) => f(raw_screen),
+        Ok(_raw_screen) => {
+            let r = f();
+            let _ignored = ct::terminal::disable_raw_mode();
+            r
+        }
     }
 }
 
 fn main() {
-    with_raw(|_raw| {
-        let input = crossterm::input();
-        let mut sync_stdin = input.read_sync();
-
-        loop {
-            let event = sync_stdin.next();
-            if let Some(ev) = event {
-                if let ct::InputEvent::Keyboard(ct::KeyEvent::Ctrl('c')) = ev {
+    with_raw(|| loop {
+        if let Ok(ev) = event::read() {
+            if let Event::Key(KeyEvent {
+                code: KeyCode::Char('c'),
+                modifiers,
+            }) = ev
+            {
+                if modifiers.contains(KeyModifiers::CONTROL) {
                     println!("Exiting");
                     break;
                 }
-                println!("{:?}", ev);
-                ct::cursor().move_left(100).unwrap();
             }
+
+            println!("{:?}", ev);
+            println!("{}", ct::cursor::MoveLeft(200));
         }
     })
 }

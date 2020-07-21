@@ -1,15 +1,15 @@
-use crossterm::{self as ct, Color};
+use crossterm::style::{style, Color, Print, StyledContent};
 
 pub fn reset() -> Color {
     Color::Reset
 }
 
-pub fn reset_display() -> ct::StyledObject<&'static str> {
-    ct::style("").with(Color::Reset)
+pub fn reset_display() -> StyledContent<&'static str> {
+    style("").with(Color::Reset)
 }
 
-pub fn reset_item() -> ct::Output {
-    ct::Output(ct::style("").with(reset()).on(reset()).to_string())
+pub fn reset_item() -> Print<String> {
+    Print(style("").with(reset()).on(reset()).to_string())
 }
 
 pub fn theme_user_input() -> Color {

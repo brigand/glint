@@ -2,7 +2,10 @@ use crate::color::reset_display;
 use crate::git::{Git, GitStatus, GitStatusItem, GitStatusType};
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{self as ct, style, InputEvent, KeyEvent};
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    style::{style, Color},
+};
 use std::iter;
 
 #[derive(Debug)]
@@ -34,9 +37,6 @@ impl<'a> FilesPrompt<'a> {
     pub fn run(mut self) -> FilesPromptResult {
         let mut buffer = TermBuffer::new();
 
-        let input = crossterm::input();
-        let mut sync_stdin = input.read_sync();
-
         let figlet = self
             .config
             .get_figlet()
@@ -48,17 +48,22 @@ impl<'a> FilesPrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                match sync_stdin.next() {
-                    Some(e) => Some(e),
+                match event::read() {
+                    Ok(Event::Key(KeyEvent { code, modifiers })) => Some((
+                        code,
+                        modifiers.contains(KeyModifiers::CONTROL),
+                        modifiers.contains(KeyModifiers::SHIFT),
+                        modifiers.contains(KeyModifiers::ALT),
+                    )),
                     _ => continue,
                 }
             };
 
             match event {
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
+                Some((KeyCode::Char('c'), true, false, false)) => {
                     return FilesPromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char(' '))) => {
+                Some((KeyCode::Char(' '), false, _, false)) => {
                     let index = self.focused_index as usize;
                     if index == 0 {
                         let set_to = !self.checked.iter().all(|&x| x);
@@ -70,7 +75,8 @@ impl<'a> FilesPrompt<'a> {
                         self.checked[index - 1] = !self.checked[index - 1];
                     }
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char('d'))) => {
+
+                Some((KeyCode::Char('d'), _, _, _)) => {
                     let index = self.focused_index as usize;
                     let files = if index == 0 {
                         vec![]
@@ -85,7 +91,7 @@ impl<'a> FilesPrompt<'a> {
 
                     let _r = self.git.diff_less(files);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
+                Some((KeyCode::Enter, _, _, _)) => {
                     let selected = self
                         .options
                         .iter()
@@ -96,16 +102,24 @@ impl<'a> FilesPrompt<'a> {
                     return FilesPromptResult::Files(selected);
                 }
 
-                Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
+                Some((KeyCode::Esc, _, _, _)) => {
                     return FilesPromptResult::Escape;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Up)) => {
+                Some((KeyCode::Up, _, _, true)) => {
+                    self.focused_index = 0;
+                }
+                Some((KeyCode::Up, _, _, false)) => {
                     self.focused_index = match self.focused_index {
                         0 => 0,
                         x => x.saturating_sub(1),
                     };
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Down)) => {
+                Some((KeyCode::Down, _, _, true)) => {
+                    let total = self.options.len() as u16 + 1;
+
+                    self.focused_index += total.saturating_sub(1);
+                }
+                Some((KeyCode::Down, _, _, false)) => {
                     let total = self.options.len() as u16 + 1;
 
                     self.focused_index += 1;
@@ -119,7 +133,7 @@ impl<'a> FilesPrompt<'a> {
 
             let mut header = figlet.create_vec();
             figlet.write_to_buf_color("<glint>", header.as_mut_slice(), |s| {
-                ct::style(s).with(ct::Color::Magenta).to_string()
+                style(s).with(Color::Magenta).to_string()
             });
 
             for line in header {
@@ -134,12 +148,24 @@ impl<'a> FilesPrompt<'a> {
 
             let y_offset = buffer.lines() + self.focused_index;
 
-            let focused_color = ct::Color::Blue;
-            let default_color = ct::Color::Reset;
+            let focused_color = Color::Blue;
+            let default_color = Color::Reset;
 
-            let status_untracked = style('+').with(ct::Color::Rgb { r: 96, g: 218, b: 177 });
-            let status_modified = style('•').with(ct::Color::Rgb { r: 96, g: 112, b: 218 });
-            let status_deleted = style('-').with(ct::Color::Rgb { r: 218, g: 96, b: 118 });
+            let status_untracked = style('+').with(Color::Rgb {
+                r: 96,
+                g: 218,
+                b: 177,
+            });
+            let status_modified = style('•').with(Color::Rgb {
+                r: 96,
+                g: 112,
+                b: 218,
+            });
+            let status_deleted = style('-').with(Color::Rgb {
+                r: 218,
+                g: 96,
+                b: 118,
+            });
             let status_none = style(' ');
 
             // Padded limit (never overflows by 1 item)
@@ -152,7 +178,11 @@ impl<'a> FilesPrompt<'a> {
                 .enumerate()
                 .take(take + 1)
             {
-                let line_color = if i as u16 == self.focused_index { focused_color } else { default_color };
+                let line_color = if i as u16 == self.focused_index {
+                    focused_color
+                } else {
+                    default_color
+                };
 
                 let checked = if i == 0 {
                     self.checked.iter().all(|&x| x)

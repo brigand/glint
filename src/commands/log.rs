@@ -1,5 +1,8 @@
 use crate::cli;
-use crossterm as ct;
+use crossterm::{
+    self as ct,
+    style::{Color, Print, SetForegroundColor as SetFg},
+};
 use glint::string;
 use glint::{Config, Git};
 use std::io::Write as _Write;
@@ -13,7 +16,8 @@ pub fn log(params: cli::Log, _config: Config) {
             std::process::exit(1);
         }
     };
-    let size = ct::terminal().size().expect("terminal size");
+    let size = ct::terminal::size().expect("terminal size");
+
     let width = std::cmp::max(size.0, 60) as usize;
     let height = params
         .num
@@ -49,29 +53,29 @@ pub fn log(params: cli::Log, _config: Config) {
         } else {
             ct::queue!(
                 stdout,
-                ct::SetFg(ct::Color::Yellow),
-                ct::Output(log.commit[..8].into()),
-                ct::Output(" ".into()),
-                ct::SetFg(ct::Color::Magenta),
-                ct::Output(ty),
-                ct::SetFg(ct::Color::Grey),
-                ct::Output(match scope {
-                    Some(_) => "(".into(),
-                    None => "".into(),
+                SetFg(Color::Yellow),
+                Print(log.commit[..8].to_string()),
+                Print(" "),
+                SetFg(Color::Magenta),
+                Print(ty),
+                SetFg(Color::Grey),
+                Print(match scope {
+                    Some(_) => "(",
+                    None => "",
                 }),
-                ct::SetFg(ct::Color::Blue),
-                ct::Output(match scope {
-                    Some(ref scope) => scope.into(),
-                    None => "".into(),
+                SetFg(Color::Blue),
+                Print(match scope {
+                    Some(ref scope) => scope,
+                    None => "",
                 }),
-                ct::SetFg(ct::Color::Grey),
-                ct::Output(match scope {
-                    Some(_) => "): ".into(),
-                    None => ": ".into(),
+                SetFg(Color::Grey),
+                Print(match scope {
+                    Some(_) => "): ",
+                    None => ": ",
                 }),
-                ct::SetFg(ct::Color::Reset),
-                ct::Output(message),
-                ct::Output('\n'.to_string())
+                SetFg(Color::Reset),
+                Print(message),
+                Print("\n")
             )
             .unwrap();
         }

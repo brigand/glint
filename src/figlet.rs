@@ -1,4 +1,4 @@
-use crossterm as ct;
+use crossterm::style::{self, Color};
 use std::fs::read_to_string;
 use std::io;
 use std::path::Path;
@@ -63,7 +63,7 @@ impl Figlet {
             let formatted = format!(
                 "{}{}",
                 style(&line[..]),
-                ct::style("").with(ct::Color::Reset).on(ct::Color::Reset)
+                style::style("").with(Color::Reset).on(Color::Reset)
             );
 
             row.push_str(&formatted);

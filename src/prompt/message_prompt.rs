@@ -1,7 +1,10 @@
 use crate::string::{self, next_word_grapheme, prev_word_grapheme, to_byte_offset, to_byte_range};
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{self as ct, InputEvent, KeyEvent};
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    style::{style, Color},
+};
 
 #[derive(Debug)]
 pub struct MessagePrompt<'a> {
@@ -28,9 +31,6 @@ impl<'a> MessagePrompt<'a> {
     pub fn run(mut self) -> MessagePromptResult {
         let mut buffer = TermBuffer::new();
 
-        let input = crossterm::input();
-        let mut sync_stdin = input.read_sync();
-
         let mut first_iteration = true;
 
         loop {
@@ -38,20 +38,25 @@ impl<'a> MessagePrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                match sync_stdin.next() {
-                    Some(e) => Some(e),
+                match event::read() {
+                    Ok(Event::Key(KeyEvent { code, modifiers })) => Some((
+                        code,
+                        modifiers.contains(KeyModifiers::CONTROL),
+                        modifiers.contains(KeyModifiers::SHIFT),
+                        modifiers.contains(KeyModifiers::ALT),
+                    )),
                     _ => continue,
                 }
             };
 
             match event {
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
+                Some((KeyCode::Char('c'), true, false, false)) => {
                     return MessagePromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('a'))) => {
+                Some((KeyCode::Char('a'), true, false, false)) => {
                     self.cursor.0 = 0;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('e'))) => {
+                Some((KeyCode::Char('e'), true, false, false)) => {
                     let (_, y) = self.cursor;
                     let line = self
                         .input
@@ -59,24 +64,24 @@ impl<'a> MessagePrompt<'a> {
                         .expect("ctrl-e unable to find current line");
                     self.cursor.0 = string::len(&line) as u16;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Alt('\n')))
-                | Some(InputEvent::Keyboard(KeyEvent::Ctrl('\n'))) => {
+                Some((KeyCode::Char('\n'), _, false, true))
+                | Some((KeyCode::Char('\n'), true, false, _)) => {
                     self.input.push(String::new());
                     self.cursor.1 += 1;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
+                Some((KeyCode::Enter, _, _, _)) => {
                     return MessagePromptResult::Message(self.input.join("\n"));
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char(c))) if c > '\x1F' => {
+                Some((KeyCode::Char(c), false, _, false)) if c > '\x1F' => {
                     let (x, y) = self.cursor;
                     let line = self.input.get_mut(y as usize).unwrap();
                     line.insert(to_byte_offset(&line, x as usize), c);
                     self.cursor.0 += 1;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Left)) => {
+                Some((KeyCode::Left, false, _, false)) => {
                     self.cursor.0 = self.cursor.0.saturating_sub(1);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Right)) => {
+                Some((KeyCode::Right, false, _, false)) => {
                     let (x, y) = self.cursor;
                     let line = self.input.get_mut(y as usize).expect("KE::Right get_mut");
                     if string::len(line) < x as usize + 1 {
@@ -84,22 +89,22 @@ impl<'a> MessagePrompt<'a> {
                     }
                     self.cursor.0 += 1;
                 }
-                // Alt-Left
-                Some(InputEvent::Keyboard(KeyEvent::Alt('b'))) => {
+                Some((KeyCode::Left, false, _, true))
+                | Some((KeyCode::Char('b'), false, _, true)) => {
                     let (x, y) = self.cursor;
                     let line = &self.input.get(y as usize).expect("current line must exist");
                     self.cursor.0 = prev_word_grapheme(line, x as usize) as u16;
                 }
-                // Alt-Right
-                Some(InputEvent::Keyboard(KeyEvent::Alt('f'))) => {
+                Some((KeyCode::Right, false, _, true))
+                | Some((KeyCode::Char('f'), false, _, true)) => {
                     let (x, y) = self.cursor;
                     let line = &self.input.get(y as usize).expect("current line must exist");
                     self.cursor.0 = next_word_grapheme(line, x as usize) as u16;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Up)) => {
+                Some((KeyCode::Up, false, _, _)) => {
                     self.cursor.1 = self.cursor.1.saturating_sub(1);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Down)) => {
+                Some((KeyCode::Down, false, _, _)) => {
                     let (_, y) = self.cursor;
                     if (y as usize) + 1 >= self.input.len() {
                         self.input.push(String::new());
@@ -107,7 +112,8 @@ impl<'a> MessagePrompt<'a> {
                     self.cursor = (0, y + 1);
                 }
                 // Alt-Backspace deletes a word.
-                Some(InputEvent::Keyboard(KeyEvent::Alt('\u{7f}'))) => match self.cursor {
+                Some((KeyCode::Backspace, false, _, true))
+                | Some((KeyCode::Char('\u{7f}'), false, _, true)) => match self.cursor {
                     (0, 0) => {}
                     (0, y) => {
                         self.input.remove(y as usize);
@@ -127,7 +133,7 @@ impl<'a> MessagePrompt<'a> {
                         self.cursor.0 = string::len(&line[..start]) as u16;
                     }
                 },
-                Some(InputEvent::Keyboard(KeyEvent::Backspace)) => match self.cursor {
+                Some((KeyCode::Backspace, false, _, false)) => match self.cursor {
                     (0, 0) => {}
                     (0, y) => {
                         self.input.remove(y as usize);
@@ -149,12 +155,12 @@ impl<'a> MessagePrompt<'a> {
                         self.cursor.0 -= 1;
                     }
                 },
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('d'))) => {
+                Some((KeyCode::Char('d'), true, _, false)) => {
                     let line = &mut self.input[self.cursor.1 as usize];
 
                     line.replace_range(to_byte_range(line, self.cursor.0 as usize), "");
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
+                Some((KeyCode::Esc, false, _, false)) => {
                     return MessagePromptResult::Escape;
                 }
                 None => {}
@@ -176,7 +182,7 @@ impl<'a> MessagePrompt<'a> {
                     buffer.push_line(format!(
                         "{}{}{}",
                         good,
-                        ct::style(bad).with(ct::Color::Red),
+                        style(bad).with(Color::Red),
                         crate::color::reset_display(),
                     ));
                 } else {
