@@ -79,7 +79,7 @@ dependencies = [
 
 [[package]]
 name = "glint"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "crossterm 0.17.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
