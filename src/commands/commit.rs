@@ -1,16 +1,20 @@
 use crate::cli;
-use crossterm as ct;
+use crossterm::{self as ct, cursor, terminal};
 use glint::{prompt, Commit, Config, Git};
 use std::io::Write as _Write;
 
-fn with_raw<R>(f: impl FnOnce(crossterm::RawScreen) -> R) -> R {
-    match crossterm::RawScreen::into_raw_mode() {
+fn with_raw<R>(f: impl FnOnce() -> R) -> R {
+    let result = match terminal::enable_raw_mode() {
         Err(_) => {
             eprintln!("Failed to convert stdio to raw mode. Can't continue.");
             std::process::exit(1);
         }
-        Ok(raw_screen) => f(raw_screen),
-    }
+        Ok(_) => f(),
+    };
+
+    let _r = terminal::disable_raw_mode();
+
+    result
 }
 
 pub fn commit(params: cli::Commit, config: Config) {
@@ -55,7 +59,7 @@ pub fn commit(params: cli::Commit, config: Config) {
     loop {
         match stage {
             Stage::Files => {
-                commit_files = with_raw(|_raw| {
+                commit_files = with_raw(|| {
                     match prompt::FilesPrompt::new(&config, &git, git_status.clone().unwrap()).run()
                     {
                         prompt::FilesPromptResult::Files(files) => Some(files),
@@ -75,7 +79,7 @@ pub fn commit(params: cli::Commit, config: Config) {
 
                 let ty = match params.ty {
                     Some(ref ty) => Some(ty.to_string()),
-                    None => with_raw(|_raw| match prompt::TypePrompt::new(&config).run() {
+                    None => with_raw(|| match prompt::TypePrompt::new(&config).run() {
                         prompt::TypePromptResult::Type(ty) => Some(ty),
                         prompt::TypePromptResult::Terminate => None,
                         prompt::TypePromptResult::Escape => {
@@ -101,7 +105,7 @@ pub fn commit(params: cli::Commit, config: Config) {
                 let mut escape = false;
                 let scope = match params.scope {
                     Some(ref scope) => Some((Some(scope.to_string()), 0)),
-                    None => with_raw(|_raw| match prompt::ScopePrompt::new(&config, &ty).run() {
+                    None => with_raw(|| match prompt::ScopePrompt::new(&config, &ty).run() {
                         prompt::ScopePromptResult::Scope(scope, lines) => Some((scope, lines)),
                         prompt::ScopePromptResult::Terminate => None,
                         prompt::ScopePromptResult::Escape => {
@@ -128,7 +132,7 @@ pub fn commit(params: cli::Commit, config: Config) {
                 let mut escape = false;
                 let message = match params.message {
                     Some(ref message) => Some(message.to_string()),
-                    None => with_raw(|_raw| match prompt::MessagePrompt::new(&config).run() {
+                    None => with_raw(|| match prompt::MessagePrompt::new(&config).run() {
                         prompt::MessagePromptResult::Message(message) => Some(message),
                         prompt::MessagePromptResult::Terminate => None,
                         prompt::MessagePromptResult::Escape => {
@@ -144,8 +148,8 @@ pub fn commit(params: cli::Commit, config: Config) {
                     let mut stderr = std::io::stderr();
                     ct::queue!(
                         stderr,
-                        ct::Up(escape_clear_lines + 2),
-                        ct::Clear(ct::ClearType::FromCursorDown)
+                        cursor::MoveUp(escape_clear_lines + 2),
+                        terminal::Clear(terminal::ClearType::FromCursorDown)
                     )
                     .unwrap();
 

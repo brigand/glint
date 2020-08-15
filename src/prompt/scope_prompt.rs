@@ -1,6 +1,10 @@
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{self as ct, InputEvent, KeyEvent};
+use crossterm::{
+    self as ct,
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    style::{style, Color},
+};
 
 #[derive(Debug)]
 pub struct ScopePrompt<'a> {
@@ -38,9 +42,6 @@ impl<'a> ScopePrompt<'a> {
             .get_figlet()
             .expect("Ensure figlet_file points to a valid file, or remove it.");
 
-        let input = crossterm::input();
-        let mut sync_stdin = input.read_sync();
-
         let mut first_iteration = true;
 
         loop {
@@ -48,20 +49,25 @@ impl<'a> ScopePrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                match sync_stdin.next() {
-                    Some(e) => Some(e),
+                match event::read() {
+                    Ok(Event::Key(KeyEvent { code, modifiers })) => Some((
+                        code,
+                        modifiers.contains(KeyModifiers::CONTROL),
+                        modifiers.contains(KeyModifiers::SHIFT),
+                        modifiers.contains(KeyModifiers::ALT),
+                    )),
                     _ => continue,
                 }
             };
 
             match event {
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
+                Some((KeyCode::Char('c'), true, false, false)) => {
                     return ScopePromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
+                Some((KeyCode::Enter, false, false, false)) => {
                     self.finished = true;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
+                Some((KeyCode::Char(c), false, _, false)) => {
                     let accept = (c >= 'a' && c <= 'z')
                         || (c >= 'A' && c <= 'Z')
                         || (c >= '0' && c <= '9')
@@ -77,15 +83,15 @@ impl<'a> ScopePrompt<'a> {
                             .insert(self.x_offset as usize - 1, c.to_ascii_lowercase());
                     }
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Left)) => {
+                Some((KeyCode::Left, false, _, false)) => {
                     self.x_offset = self.x_offset.saturating_sub(1);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Right)) => {
+                Some((KeyCode::Right, false, _, false)) => {
                     if (self.x_offset as usize) < self.input.len() {
                         self.x_offset += 1;
                     }
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Backspace)) => {
+                Some((KeyCode::Backspace, false, _, false)) => {
                     let offset = self.x_offset as usize;
                     let len = self.input.len();
                     if len > 0 && offset < len - 1 {
@@ -96,34 +102,34 @@ impl<'a> ScopePrompt<'a> {
                         self.x_offset -= 1;
                     }
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
+                Some((KeyCode::Esc, false, _, false)) => {
                     return ScopePromptResult::Escape;
                 }
                 None => {}
                 _ => continue,
             };
 
-            let (term_width, _) = ct::terminal().size().expect("get terminal size");
+            let (term_width, _) = ct::terminal::size().expect("get terminal size");
 
             let mut lines = figlet.create_vec();
 
             let mut cursor_x = 0;
             cursor_x += figlet.write_to_buf_color(&self.ty, &mut lines[..], |s| {
-                ct::style(s).with(ct::Color::Blue).to_string()
+                style(s).with(Color::Blue).to_string()
             });
 
             let show_parens = !self.finished || !self.input.is_empty();
 
             if show_parens {
                 cursor_x += figlet.write_to_buf_color("(", &mut lines[..], |s| {
-                    ct::style(s).with(ct::Color::Grey).to_string()
+                    style(s).with(Color::Grey).to_string()
                 });
             }
 
             let offset = self.x_offset as usize;
             cursor_x +=
                 figlet.write_to_buf_color(&(self.input.as_str())[0..offset], &mut lines[..], |s| {
-                    ct::style(s).with(ct::Color::Green).to_string()
+                    style(s).with(Color::Green).to_string()
                 });
 
             let mut fig_width = cursor_x;
@@ -132,23 +138,23 @@ impl<'a> ScopePrompt<'a> {
             // Note that
             if !self.finished {
                 fig_width += figlet.write_to_buf_color("-", &mut lines[..], |s| {
-                    ct::style(s).with(ct::Color::Grey).to_string()
+                    style(s).with(Color::Grey).to_string()
                 });
             }
 
             fig_width +=
                 figlet.write_to_buf_color(&(self.input.as_str())[offset..], &mut lines[..], |s| {
-                    ct::style(s).with(ct::Color::Green).to_string()
+                    style(s).with(Color::Green).to_string()
                 });
 
             if show_parens {
                 fig_width += figlet.write_to_buf_color(")", &mut lines[..], |s| {
-                    ct::style(s).with(ct::Color::Grey).to_string()
+                    style(s).with(Color::Grey).to_string()
                 });
             }
 
             fig_width += figlet.write_to_buf_color(":", &mut lines[..], |s| {
-                ct::style(s).with(ct::Color::Grey).to_string()
+                style(s).with(Color::Grey).to_string()
             });
 
             // We're tracking the printed width above to see if we've run out of space here.
@@ -163,19 +169,19 @@ impl<'a> ScopePrompt<'a> {
                 lines = vec!["".into(), "".into(), "".into()];
                 let line = &mut lines[1];
 
-                write!(line, "{}", ct::style(&self.ty).with(ct::Color::Blue)).unwrap();
-                write!(line, "{}", ct::style("(").with(ct::Color::Grey)).unwrap();
+                write!(line, "{}", style(&self.ty).with(Color::Blue)).unwrap();
+                write!(line, "{}", style("(").with(Color::Grey)).unwrap();
                 write!(
                     line,
                     "{}",
-                    ct::style(&(self.input.as_str())[0..offset]).with(ct::Color::Green)
+                    style(&(self.input.as_str())[0..offset]).with(Color::Green)
                 )
                 .unwrap();
 
                 if !self.finished {
-                    write!(line, "{}", ct::style("_").with(ct::Color::Grey)).unwrap();
+                    write!(line, "{}", style("_").with(Color::Grey)).unwrap();
                 }
-                write!(line, "{}", ct::style(")").with(ct::Color::Grey)).unwrap();
+                write!(line, "{}", style(")").with(Color::Grey)).unwrap();
 
                 cursor_x = self.ty.len() + 1 + self.input.len();
             }

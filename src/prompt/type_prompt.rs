@@ -1,13 +1,16 @@
 use crate::color::reset_display;
 use crate::Config;
 use crate::TermBuffer;
-use crossterm::{self as ct, style, InputEvent, KeyEvent};
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
+    style::{style, Color},
+};
 
 #[derive(Debug)]
 pub struct TypePrompt<'a> {
     config: &'a Config,
     input: String,
-    selected_index: u16,
+    focused_index: u16,
 }
 
 pub enum TypePromptResult {
@@ -21,7 +24,7 @@ impl<'a> TypePrompt<'a> {
         TypePrompt {
             config,
             input: Default::default(),
-            selected_index: 0,
+            focused_index: 0,
         }
     }
 
@@ -31,7 +34,7 @@ impl<'a> TypePrompt<'a> {
     fn get_at_selected_index(&self) -> &str {
         let options = self.filter_types();
         options
-            .get(self.selected_index as usize)
+            .get(self.focused_index as usize)
             .or_else(|| options.last())
             .copied()
             .unwrap_or("misc")
@@ -55,9 +58,6 @@ impl<'a> TypePrompt<'a> {
     pub fn run(mut self) -> TypePromptResult {
         let mut buffer = TermBuffer::new();
 
-        let input = crossterm::input();
-        let mut sync_stdin = input.read_sync();
-
         let figlet = self
             .config
             .get_figlet()
@@ -69,33 +69,38 @@ impl<'a> TypePrompt<'a> {
                 first_iteration = false;
                 None
             } else {
-                match sync_stdin.next() {
-                    Some(e) => Some(e),
+                match event::read() {
+                    Ok(Event::Key(KeyEvent { code, modifiers })) => Some((
+                        code,
+                        modifiers.contains(KeyModifiers::CONTROL),
+                        modifiers.contains(KeyModifiers::SHIFT),
+                        modifiers.contains(KeyModifiers::ALT),
+                    )),
                     _ => continue,
                 }
             };
 
             match event {
-                Some(InputEvent::Keyboard(KeyEvent::Ctrl('c'))) => {
+                Some((KeyCode::Char('c'), true, false, false)) => {
                     return TypePromptResult::Terminate;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Enter)) => {
+                Some((KeyCode::Enter, false, false, false)) => {
                     return TypePromptResult::Type(self.get_at_selected_index().to_string());
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Char(c))) => {
+                Some((KeyCode::Char(c), false, _, false)) => {
                     self.input.push(c.to_ascii_lowercase());
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Backspace)) => {
+                Some((KeyCode::Backspace, false, _, false)) => {
                     self.input.pop();
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Esc)) => {
+                Some((KeyCode::Esc, false, _, false)) => {
                     return TypePromptResult::Escape;
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Up)) => {
-                    self.selected_index = self.selected_index.saturating_sub(1);
+                Some((KeyCode::Up, false, _, false)) => {
+                    self.focused_index = self.focused_index.saturating_sub(1);
                 }
-                Some(InputEvent::Keyboard(KeyEvent::Down)) => {
-                    self.selected_index += 1;
+                Some((KeyCode::Down, false, _, false)) => {
+                    self.focused_index += 1;
                 }
                 None => {}
                 _ => continue,
@@ -108,7 +113,7 @@ impl<'a> TypePrompt<'a> {
 
             let mut header = figlet.create_vec();
             figlet.write_to_buf_color("<glint>", header.as_mut_slice(), |s| {
-                ct::style(s).with(ct::Color::Magenta).to_string()
+                style(s).with(Color::Magenta).to_string()
             });
 
             let y_offset = header.len() as u16;
@@ -125,22 +130,24 @@ impl<'a> TypePrompt<'a> {
                     "{}{}{}{}",
                     prompt_pre,
                     style(prompt_post).with(crate::color::theme_user_input()),
-                    underscores,
+                    style(underscores).with(crate::color::theme_user_input()),
                     reset_display()
                 ));
                 let x = prompt_pre.len() + prompt_post.len();
                 x as u16
             };
 
-            let active = style("*").with(ct::Color::Blue).to_string();
+            let focused_color = Color::Blue;
+            let default_color = Color::Reset;
+
             for (i, ty) in types.into_iter().enumerate() {
-                let prefix = if i as u16 == self.selected_index {
-                    &active as &str
+                let line_content = if i as u16 == self.focused_index {
+                    style(["*", " ", ty].concat()).with(focused_color)
                 } else {
-                    "-"
+                    style(["-", " ", ty].concat()).with(default_color)
                 };
 
-                let line = format!("{} {}{}", prefix, ty, reset_display());
+                let line = format!("{}{}", line_content, reset_display());
                 buffer.push_line(line);
             }
 

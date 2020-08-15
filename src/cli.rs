@@ -38,6 +38,10 @@ pub struct Log {
     #[structopt(short, long)]
     pub num: Option<usize>,
 
+    /// Output log info as a JSON array of objects
+    #[structopt(short, long)]
+    pub json: bool,
+
     /// Only useful when filing bug reports for glint.
     #[structopt(short, long)]
     pub debug: bool,
