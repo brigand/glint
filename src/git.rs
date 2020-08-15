@@ -136,6 +136,15 @@ impl Git {
         command
     }
 
+    pub fn less(&self, file: impl AsRef<OsStr>) -> io::Result<()> {
+        Command::new("less")
+            .arg(file.as_ref())
+            .current_dir(&self.repo_root)
+            .status()?;
+
+        Ok(())
+    }
+
     pub fn diff_less<I>(&self, files: impl IntoIterator<Item = I>) -> io::Result<()>
     where
         I: AsRef<OsStr>,
@@ -238,6 +247,10 @@ impl GitStatusItem {
     }
     pub fn status(&self) -> &GitStatusType {
         self.unstaged.as_ref().unwrap_or(&GitStatusType::None)
+    }
+
+    pub fn is_new(&self) -> bool {
+        self.staged.is_none() && matches!(self.unstaged, Some(GitStatusType::Untracked))
     }
 }
 

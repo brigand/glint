@@ -78,18 +78,23 @@ impl<'a> FilesPrompt<'a> {
 
                 Some((KeyCode::Char('d'), _, _, _)) => {
                     let index = self.focused_index as usize;
-                    let files = if index == 0 {
-                        vec![]
+                    if index == 0 {
+                        let files: Vec<String> = vec![];
+                        let _r = self.git.diff_less(files);
                     } else {
                         let option = self
                             .options
                             .iter()
                             .nth(index - 1)
                             .expect("diff should match a file");
-                        vec![option.file_name().to_string()]
-                    };
 
-                    let _r = self.git.diff_less(files);
+                        if option.is_new() {
+                            let _r = self.git.less(option.file_name());
+                        } else {
+                            let files = vec![option.file_name().to_string()];
+                            let _r = self.git.diff_less(files);
+                        }
+                    }
                 }
                 Some((KeyCode::Enter, _, _, _)) => {
                     let selected = self
@@ -205,7 +210,7 @@ impl<'a> FilesPrompt<'a> {
                     prefix,
                     file_status,
                     file_name,
-                    reset_display()
+                    reset_display(),
                 );
                 buffer.push_line(line);
             }
