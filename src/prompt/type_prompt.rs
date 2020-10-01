@@ -100,7 +100,12 @@ impl<'a> TypePrompt<'a> {
                     self.focused_index = self.focused_index.saturating_sub(1);
                 }
                 Some((KeyCode::Down, false, _, false)) => {
+                    let total = self.config.types.len() as u16;
+
                     self.focused_index += 1;
+                    if self.focused_index >= total {
+                        self.focused_index = total.saturating_sub(1);
+                    }
                 }
                 None => {}
                 _ => continue,
@@ -116,7 +121,7 @@ impl<'a> TypePrompt<'a> {
                 style(s).with(Color::Magenta).to_string()
             });
 
-            let y_offset = header.len() as u16;
+            let y_offset = header.len() as u16 + 1;
 
             for line in header {
                 buffer.push_line(line);
@@ -126,6 +131,7 @@ impl<'a> TypePrompt<'a> {
                 let prompt_pre = "Choose a type: ";
                 let prompt_post = &self.input;
                 let underscores = "_".repeat(6 - self.input.len());
+                buffer.push_line("");
                 buffer.push_line(format!(
                     "{}{}{}{}",
                     prompt_pre,
