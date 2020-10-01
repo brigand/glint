@@ -97,14 +97,16 @@ impl<'a> FilesPrompt<'a> {
                     }
                 }
                 Some((KeyCode::Enter, _, _, _)) => {
-                    let selected = self
+                    let selected: Vec<String> = self
                         .options
                         .iter()
                         .enumerate()
                         .filter_map(|(i, file)| Some(file).filter(|_| self.checked[i]))
                         .map(Into::into)
                         .collect();
-                    return FilesPromptResult::Files(selected);
+                    if !selected.is_empty() {
+                        return FilesPromptResult::Files(selected);
+                    }
                 }
 
                 Some((KeyCode::Esc, _, _, _)) => {
