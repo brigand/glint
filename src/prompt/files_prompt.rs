@@ -181,7 +181,7 @@ impl<'a> FilesPrompt<'a> {
             let take = if total > max { max - 3 } else { total };
 
             for (i, git_status_item) in iter::once(&GitStatusItem::new("<all>".to_owned()))
-                .chain(self.options.iter().map(|item| item))
+                .chain(self.options.iter())
                 .enumerate()
                 .take(take + 1)
             {

@@ -192,10 +192,7 @@ impl Git {
                 let staged = chars
                     .next()
                     .and_then(GitStatusType::from_char)
-                    .filter(|item| match item {
-                        GitStatusType::Untracked => false,
-                        _ => true,
-                    });
+                    .filter(|item| !matches!(item, GitStatusType::Untracked));
                 let unstaged = chars.next().and_then(GitStatusType::from_char);
 
                 chars.next();
