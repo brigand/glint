@@ -69,7 +69,7 @@ pub fn commit(params: cli::Commit, config: Config) {
                 });
 
                 if commit_files.is_none() {
-                    std::process::exit(1);
+                    std::process::exit(0);
                 }
 
                 stage = Stage::Type;
@@ -96,7 +96,7 @@ pub fn commit(params: cli::Commit, config: Config) {
 
                 let ty = match ty {
                     Some(s) => s,
-                    None => std::process::exit(1),
+                    None => std::process::exit(0),
                 };
 
                 stage = Stage::Scope(ty);
@@ -122,7 +122,7 @@ pub fn commit(params: cli::Commit, config: Config) {
 
                 let (scope, lines) = match scope {
                     Some(t) => t,
-                    None => std::process::exit(1),
+                    None => std::process::exit(0),
                 };
 
                 stage = Stage::Message(ty, scope);
@@ -158,7 +158,7 @@ pub fn commit(params: cli::Commit, config: Config) {
 
                 let message = match message {
                     Some(s) => s,
-                    None => std::process::exit(1),
+                    None => std::process::exit(0),
                 };
 
                 stage = Stage::Complete(ty, scope, message);
