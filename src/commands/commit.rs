@@ -63,102 +63,79 @@ pub fn commit(params: cli::Commit, config: Config) {
                     match prompt::FilesPrompt::new(&config, &git, git_status.clone().unwrap()).run()
                     {
                         prompt::FilesPromptResult::Files(files) => Some(files),
-                        prompt::FilesPromptResult::Terminate => None,
-                        prompt::FilesPromptResult::Escape => None,
+                        prompt::FilesPromptResult::Terminate => std::process::exit(2),
+                        prompt::FilesPromptResult::Escape => std::process::exit(0),
                     }
                 });
-
-                if commit_files.is_none() {
-                    std::process::exit(1);
-                }
 
                 stage = Stage::Type;
             }
             Stage::Type => {
-                let mut escape = false;
-
                 let ty = match params.ty {
                     Some(ref ty) => Some(ty.to_string()),
                     None => with_raw(|| match prompt::TypePrompt::new(&config).run() {
                         prompt::TypePromptResult::Type(ty) => Some(ty),
-                        prompt::TypePromptResult::Terminate => None,
-                        prompt::TypePromptResult::Escape => {
-                            escape = true;
-                            None
-                        }
+                        prompt::TypePromptResult::Terminate => std::process::exit(2),
+                        prompt::TypePromptResult::Escape => None,
                     }),
                 };
 
-                if escape && commit_files.is_some() {
-                    stage = Stage::Files;
-                    continue;
-                }
-
                 let ty = match ty {
                     Some(s) => s,
-                    None => std::process::exit(1),
+                    None => {
+                        stage = Stage::Files;
+                        continue;
+                    }
                 };
 
                 stage = Stage::Scope(ty);
             }
             Stage::Scope(ty) => {
-                let mut escape = false;
                 let scope = match params.scope {
                     Some(ref scope) => Some((Some(scope.to_string()), 0)),
                     None => with_raw(|| match prompt::ScopePrompt::new(&config, &ty).run() {
                         prompt::ScopePromptResult::Scope(scope, lines) => Some((scope, lines)),
-                        prompt::ScopePromptResult::Terminate => None,
-                        prompt::ScopePromptResult::Escape => {
-                            escape = true;
-                            None
-                        }
+                        prompt::ScopePromptResult::Terminate => std::process::exit(2),
+                        prompt::ScopePromptResult::Escape => None,
                     }),
                 };
 
-                if escape {
-                    stage = Stage::Type;
-                    continue;
-                }
-
                 let (scope, lines) = match scope {
                     Some(t) => t,
-                    None => std::process::exit(1),
+                    None => {
+                        stage = Stage::Type;
+                        continue;
+                    }
                 };
 
                 stage = Stage::Message(ty, scope);
                 escape_clear_lines = lines as u16;
             }
             Stage::Message(ty, scope) => {
-                let mut escape = false;
                 let message = match params.message {
                     Some(ref message) => Some(message.to_string()),
                     None => with_raw(|| match prompt::MessagePrompt::new(&config).run() {
                         prompt::MessagePromptResult::Message(message) => Some(message),
-                        prompt::MessagePromptResult::Terminate => None,
-                        prompt::MessagePromptResult::Escape => {
-                            escape = true;
-                            None
-                        }
+                        prompt::MessagePromptResult::Terminate => std::process::exit(2),
+                        prompt::MessagePromptResult::Escape => None,
                     }),
                 };
 
-                if escape {
-                    stage = Stage::Scope(ty);
-
-                    let mut stderr = std::io::stderr();
-                    ct::queue!(
-                        stderr,
-                        cursor::MoveUp(escape_clear_lines + 2),
-                        terminal::Clear(terminal::ClearType::FromCursorDown)
-                    )
-                    .unwrap();
-
-                    continue;
-                }
-
                 let message = match message {
                     Some(s) => s,
-                    None => std::process::exit(1),
+                    None => {
+                        stage = Stage::Scope(ty);
+
+                        let mut stderr = std::io::stderr();
+                        ct::queue!(
+                            stderr,
+                            cursor::MoveUp(escape_clear_lines + 2),
+                            terminal::Clear(terminal::ClearType::FromCursorDown)
+                        )
+                        .unwrap();
+
+                        continue;
+                    }
                 };
 
                 stage = Stage::Complete(ty, scope, message);
