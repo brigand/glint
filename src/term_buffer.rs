@@ -95,7 +95,7 @@ impl TermBuffer {
         let same_line_count = self.state.len() == self.flushed.len();
 
         if !same_line_count {
-            return self.render_full();
+            return self.render_full(true);
         }
 
         let changed_lines: Vec<_> = self
@@ -112,7 +112,7 @@ impl TermBuffer {
             }
             self.flushed = self.state.reset();
         } else {
-            self.render_full();
+            self.render_full(false);
         }
     }
 
@@ -157,9 +157,9 @@ impl TermBuffer {
     }
 
     /// Renders a complete frame to the terminal
-    pub fn render_full(&mut self) {
-        self.cursor_to_start();
-        self.queue_clear();
+    pub fn render_full(&mut self, content_changed: bool) {
+        self.cursor_to_start(content_changed);
+        self.queue_clear(content_changed);
 
         let state = self.state.reset();
 
@@ -215,18 +215,25 @@ impl TermBuffer {
     }
 
     /// Clears from the cursor position down
-    fn queue_clear(&mut self) {
+    fn queue_clear(&mut self, content_changed: bool) {
         ct::queue!(self.stdout, Clear(ClearType::FromCursorDown)).unwrap();
+        if !content_changed {
+            ct::queue!(self.stdout, Clear(ClearType::CurrentLine)).unwrap();
+        }
+        ct::queue!(self.stdout, MoveLeft(1000)).unwrap();
     }
 
-    fn cursor_to_start(&mut self) {
+    fn cursor_to_start(&mut self, content_changed: bool) {
         let (_, y) = self.flushed.cursor;
 
-        // if x > 0 {
-        ct::queue!(self.stdout, MoveLeft(1000)).unwrap();
-        // }
         if y > 0 {
-            ct::queue!(self.stdout, MoveUp(y)).unwrap();
+            if !content_changed {
+                ct::queue!(self.stdout, MoveLeft(1000)).unwrap();
+                ct::queue!(self.stdout, MoveUp(y)).unwrap();
+            } else {
+                ct::queue!(self.stdout, MoveRight(1000)).unwrap();
+                ct::queue!(self.stdout, MoveUp(y + 1)).unwrap();
+            }
         }
     }
 }
