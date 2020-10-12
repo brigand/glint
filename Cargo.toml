@@ -2,7 +2,7 @@
 authors = ["Frankie Bagnardi <f.bagnardi@gmail.com>"]
 edition = "2018"
 name = "glint"
-version = "0.6.0"
+version = "0.6.2"
 description = "a friendly tool for creating commits in the commitlint style"
 homepage="https://github.com/brigand/glint"
 repository="https://github.com/brigand/glint"
