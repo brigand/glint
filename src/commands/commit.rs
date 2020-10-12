@@ -17,6 +17,11 @@ fn with_raw<R>(f: impl FnOnce() -> R) -> R {
     result
 }
 
+fn exit<R>(code: i32) -> Option<R> {
+    let _r = terminal::disable_raw_mode();
+    std::process::exit(code)
+}
+
 pub fn commit(params: cli::Commit, config: Config) {
     let git = match Git::from_cwd() {
         Ok(git) => git,
@@ -63,8 +68,8 @@ pub fn commit(params: cli::Commit, config: Config) {
                     match prompt::FilesPrompt::new(&config, &git, git_status.clone().unwrap()).run()
                     {
                         prompt::FilesPromptResult::Files(files) => Some(files),
-                        prompt::FilesPromptResult::Terminate => std::process::exit(2),
-                        prompt::FilesPromptResult::Escape => std::process::exit(0),
+                        prompt::FilesPromptResult::Terminate => exit(2),
+                        prompt::FilesPromptResult::Escape => exit(0),
                     }
                 });
 
@@ -75,7 +80,7 @@ pub fn commit(params: cli::Commit, config: Config) {
                     Some(ref ty) => Some(ty.to_string()),
                     None => with_raw(|| match prompt::TypePrompt::new(&config).run() {
                         prompt::TypePromptResult::Type(ty) => Some(ty),
-                        prompt::TypePromptResult::Terminate => std::process::exit(2),
+                        prompt::TypePromptResult::Terminate => exit(2),
                         prompt::TypePromptResult::Escape => None,
                     }),
                 };
@@ -95,7 +100,7 @@ pub fn commit(params: cli::Commit, config: Config) {
                     Some(ref scope) => Some((Some(scope.to_string()), 0)),
                     None => with_raw(|| match prompt::ScopePrompt::new(&config, &ty).run() {
                         prompt::ScopePromptResult::Scope(scope, lines) => Some((scope, lines)),
-                        prompt::ScopePromptResult::Terminate => std::process::exit(2),
+                        prompt::ScopePromptResult::Terminate => exit(2),
                         prompt::ScopePromptResult::Escape => None,
                     }),
                 };
@@ -116,7 +121,7 @@ pub fn commit(params: cli::Commit, config: Config) {
                     Some(ref message) => Some(message.to_string()),
                     None => with_raw(|| match prompt::MessagePrompt::new(&config).run() {
                         prompt::MessagePromptResult::Message(message) => Some(message),
-                        prompt::MessagePromptResult::Terminate => std::process::exit(2),
+                        prompt::MessagePromptResult::Terminate => exit(2),
                         prompt::MessagePromptResult::Escape => None,
                     }),
                 };
