@@ -121,16 +121,16 @@ impl<'a> TypePrompt<'a> {
                 style(s).with(Color::Magenta).to_string()
             });
 
-            let y_offset = header.len() as u16 + 1;
-
             for line in header {
                 buffer.push_line(line);
             }
 
+            let y_offset = buffer.lines() + 1;
+
             let after_prompt_x = {
                 let prompt_pre = "Choose a type: ";
                 let prompt_post = &self.input;
-                let underscores = "_".repeat(6 - self.input.len());
+                let underscores = "_".repeat(6_usize.saturating_sub(self.input.len()));
                 buffer.push_line("");
                 buffer.push_line(format!(
                     "{}{}{}{}",
