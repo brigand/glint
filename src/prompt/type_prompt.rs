@@ -88,7 +88,9 @@ impl<'a> TypePrompt<'a> {
                     return TypePromptResult::Type(self.get_at_selected_index().to_string());
                 }
                 Some((KeyCode::Char(c), false, _, false)) => {
-                    self.input.push(c.to_ascii_lowercase());
+                    if self.input.len() < 6 {
+                        self.input.push(c.to_ascii_lowercase());
+                    }
                 }
                 Some((KeyCode::Backspace, false, _, false)) => {
                     self.input.pop();
@@ -121,11 +123,11 @@ impl<'a> TypePrompt<'a> {
                 style(s).with(Color::Magenta).to_string()
             });
 
-            let y_offset = header.len() as u16 + 1;
-
             for line in header {
                 buffer.push_line(line);
             }
+
+            let y_offset = buffer.lines() + 1;
 
             let after_prompt_x = {
                 let prompt_pre = "Choose a type: ";
