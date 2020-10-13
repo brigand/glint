@@ -88,9 +88,7 @@ impl<'a> TypePrompt<'a> {
                     return TypePromptResult::Type(self.get_at_selected_index().to_string());
                 }
                 Some((KeyCode::Char(c), false, _, false)) => {
-                    if self.input.len() < 6 {
-                        self.input.push(c.to_ascii_lowercase());
-                    }
+                    self.input.push(c.to_ascii_lowercase());
                 }
                 Some((KeyCode::Backspace, false, _, false)) => {
                     self.input.pop();
@@ -132,7 +130,7 @@ impl<'a> TypePrompt<'a> {
             let after_prompt_x = {
                 let prompt_pre = "Choose a type: ";
                 let prompt_post = &self.input;
-                let underscores = "_".repeat(6 - self.input.len());
+                let underscores = "_".repeat(6_usize.saturating_sub(self.input.len()));
                 buffer.push_line("");
                 buffer.push_line(format!(
                     "{}{}{}{}",
