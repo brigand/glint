@@ -38,7 +38,7 @@ impl Drop for TermBuffer {
         }
         self.cursor_to_end();
 
-        ct::queue!(self.stdout, Print("\n".to_string())).unwrap();
+        ct::queue!(self.stdout, Print("".to_string())).unwrap();
         self.flush();
     }
 }
@@ -153,7 +153,8 @@ impl TermBuffer {
         if dx > 0 {
             ct::queue!(self.stdout, MoveRight(dx)).unwrap();
         }
-        self.flushed.cursor = (0, dy);
+
+        self.flushed.cursor = (dx, dy);
     }
 
     /// Renders a complete frame to the terminal

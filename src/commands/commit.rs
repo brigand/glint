@@ -134,7 +134,7 @@ pub fn commit(params: cli::Commit, config: Config) {
                         let mut stderr = std::io::stderr();
                         ct::queue!(
                             stderr,
-                            cursor::MoveUp(escape_clear_lines + 2),
+                            cursor::MoveUp(escape_clear_lines),
                             terminal::Clear(terminal::ClearType::FromCursorDown)
                         )
                         .unwrap();
