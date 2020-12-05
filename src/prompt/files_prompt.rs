@@ -44,7 +44,7 @@ impl<'a> FilesPrompt<'a> {
 
         let mut first_iteration = true;
         loop {
-            let event = if first_iteration {
+            let mut event = if first_iteration {
                 first_iteration = false;
                 None
             } else {
@@ -58,6 +58,18 @@ impl<'a> FilesPrompt<'a> {
                     _ => continue,
                 }
             };
+
+            if let Some((ref mut key, _, _, _)) = event {
+                // Vim-like navigation, since this prompt doesn't have text input
+                // The right arrow strokes are also aliased to the diff shortcut, since
+                // it's like going deeper into the tree
+                *key = match key {
+                    KeyCode::Char('k') => KeyCode::Up,
+                    KeyCode::Char('j') => KeyCode::Down,
+                    KeyCode::Char('l') | KeyCode::Right => KeyCode::Char('d'),
+                    _ => *key,
+                };
+            }
 
             match event {
                 Some((KeyCode::Char('c'), true, false, false)) => {
