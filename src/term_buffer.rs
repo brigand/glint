@@ -106,10 +106,16 @@ impl TermBuffer {
             .filter_map(|(i, (a, b))| if a == b { None } else { Some(i) })
             .collect();
 
+        let changed_cursor = self.state.cursor != self.flushed.cursor;
+
         if !changed_lines.is_empty() && changed_lines.len() <= MAX_PATCH_LINES {
             for line_num in changed_lines {
                 self.render_one_line(line_num);
             }
+            self.flushed = self.state.reset();
+        } else if changed_cursor {
+            self.render_one_line(self.flushed.cursor.1 as usize);
+            self.render_one_line(self.state.cursor.1 as usize);
             self.flushed = self.state.reset();
         } else if changed_lines.is_empty() {
             self.flushed = self.state.reset();
