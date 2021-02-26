@@ -111,6 +111,8 @@ impl TermBuffer {
                 self.render_one_line(line_num);
             }
             self.flushed = self.state.reset();
+        } else if changed_lines.is_empty() {
+            self.flushed = self.state.reset();
         } else {
             self.render_full();
         }
