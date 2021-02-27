@@ -108,16 +108,21 @@ impl TermBuffer {
 
         let changed_cursor = self.state.cursor != self.flushed.cursor;
 
-        if !changed_lines.is_empty() && changed_lines.len() <= MAX_PATCH_LINES {
+        if changed_lines.is_empty() && !changed_cursor {
+            self.flushed = self.state.reset();
+        } else if changed_lines.is_empty() && changed_cursor {
+            match self.state.cursor.1 == self.flushed.cursor.1 {
+                true => self.render_one_line(self.state.cursor.1 as usize),
+                false => {
+                    self.render_one_line(self.flushed.cursor.1 as usize);
+                    self.render_one_line(self.state.cursor.1 as usize);
+                }
+            }
+            self.flushed = self.state.reset();
+        } else if !changed_lines.is_empty() && changed_lines.len() <= MAX_PATCH_LINES {
             for line_num in changed_lines {
                 self.render_one_line(line_num);
             }
-            self.flushed = self.state.reset();
-        } else if changed_cursor {
-            self.render_one_line(self.flushed.cursor.1 as usize);
-            self.render_one_line(self.state.cursor.1 as usize);
-            self.flushed = self.state.reset();
-        } else if changed_lines.is_empty() {
             self.flushed = self.state.reset();
         } else {
             self.render_full();
