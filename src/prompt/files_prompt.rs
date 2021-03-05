@@ -45,7 +45,7 @@ impl<'a> FilesPrompt<'a> {
         // Padded limit (never overflows by 1 item)
         let total = self.options.len();
         let max = 15;
-        let take = if total > max { max - 2 } else { total + 1 };
+        let take = if total > max { max - 3 } else { total };
 
         let mut first_iteration = true;
         loop {
@@ -139,12 +139,12 @@ impl<'a> FilesPrompt<'a> {
                     };
                 }
                 Some((KeyCode::Down, _, _, true)) => {
-                    self.focused_index += (take as u16).saturating_sub(1);
+                    self.focused_index += (take as u16 + 1).saturating_sub(1);
                 }
                 Some((KeyCode::Down, _, _, false)) => {
                     self.focused_index += 1;
-                    if self.focused_index >= take as u16 {
-                        self.focused_index = (take as u16).saturating_sub(1);
+                    if self.focused_index >= take as u16 + 1 {
+                        self.focused_index = (take as u16 + 1).saturating_sub(1);
                     }
                 }
                 None => {}
@@ -191,7 +191,7 @@ impl<'a> FilesPrompt<'a> {
             for (i, git_status_item) in iter::once(&GitStatusItem::new("<all>".to_owned()))
                 .chain(self.options.iter().map(|item| item))
                 .enumerate()
-                .take(take)
+                .take(take + 1)
             {
                 let line_color = if i as u16 == self.focused_index {
                     focused_color
