@@ -139,12 +139,12 @@ impl<'a> FilesPrompt<'a> {
                     };
                 }
                 Some((KeyCode::Down, _, _, true)) => {
-                    self.focused_index += (take as u16 + 1).saturating_sub(1);
+                    self.focused_index += take as u16;
                 }
                 Some((KeyCode::Down, _, _, false)) => {
                     self.focused_index += 1;
                     if self.focused_index >= take as u16 + 1 {
-                        self.focused_index = (take as u16 + 1).saturating_sub(1);
+                        self.focused_index = take as u16;
                     }
                 }
                 None => {}
