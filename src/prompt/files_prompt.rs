@@ -42,6 +42,11 @@ impl<'a> FilesPrompt<'a> {
             .get_figlet()
             .expect("Ensure figlet_file points to a valid file, or remove it.");
 
+        // Padded limit (never overflows by 1 item)
+        let total = self.options.len();
+        let max = 15;
+        let take = if total > max { max - 3 } else { total };
+
         let mut first_iteration = true;
         loop {
             let mut event = if first_iteration {
@@ -134,16 +139,12 @@ impl<'a> FilesPrompt<'a> {
                     };
                 }
                 Some((KeyCode::Down, _, _, true)) => {
-                    let total = self.options.len() as u16 + 1;
-
-                    self.focused_index += total.saturating_sub(1);
+                    self.focused_index += take as u16;
                 }
                 Some((KeyCode::Down, _, _, false)) => {
-                    let total = self.options.len() as u16 + 1;
-
                     self.focused_index += 1;
-                    if self.focused_index >= total {
-                        self.focused_index = total.saturating_sub(1);
+                    if self.focused_index >= take as u16 + 1 {
+                        self.focused_index = take as u16;
                     }
                 }
                 None => {}
@@ -186,11 +187,6 @@ impl<'a> FilesPrompt<'a> {
                 b: 118,
             });
             let status_none = style(' ');
-
-            // Padded limit (never overflows by 1 item)
-            let total = self.options.len();
-            let max = 15;
-            let take = if total > max { max - 3 } else { total };
 
             for (i, git_status_item) in iter::once(&GitStatusItem::new("<all>".to_owned()))
                 .chain(self.options.iter().map(|item| item))
