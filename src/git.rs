@@ -249,6 +249,10 @@ impl GitStatusItem {
         self.unstaged.as_ref().unwrap_or(&GitStatusType::None)
     }
 
+    pub fn is_dir(&self) -> bool {
+        self.file_name.ends_with('/')
+    }
+
     pub fn is_new(&self) -> bool {
         self.staged.is_none() && matches!(self.unstaged, Some(GitStatusType::Untracked))
     }
