@@ -106,8 +106,14 @@ impl<'a> FilesPrompt<'a> {
                             .nth(index - 1)
                             .expect("diff should match a file");
 
-                        if option.is_new() && !option.is_dir() {
-                            let _r = self.git.less(option.file_name());
+                        if option.is_new() {
+                            if option.is_dir() {
+                                let _r = self
+                                    .git
+                                    .directory_untracked_less(option.file_name().as_ref());
+                            } else {
+                                let _r = self.git.less(option.file_name());
+                            }
                         } else {
                             let files = vec![option.file_name().to_string()];
                             let _r = self.git.diff_less(files);
