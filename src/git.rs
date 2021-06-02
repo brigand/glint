@@ -1,6 +1,7 @@
 use std::env::current_dir;
 use std::ffi::OsStr;
 use std::fmt;
+use std::io::Cursor;
 use std::io::Read;
 use std::io::{self, BufRead, BufReader};
 use std::os::unix::prelude::OsStrExt;
@@ -184,8 +185,10 @@ impl Git {
         let mut stdin = less.stdin.take().expect("Failed to open stdin");
         spawn(move || {
             let suffix = "\n= End =\n";
-            let prefix = prefix.into_bytes();
-            let mut input = prefix.chain(ls_stdout).chain(suffix.as_bytes());
+            let prefix = Cursor::new(prefix);
+
+            let mut input = prefix.chain(ls_stdout).chain(Cursor::new(suffix));
+
             let _r = io::copy(&mut input, &mut stdin);
         });
 
