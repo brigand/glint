@@ -1,9 +1,13 @@
 use std::env::current_dir;
 use std::ffi::OsStr;
 use std::fmt;
+use std::io::Read;
 use std::io::{self, BufRead, BufReader};
+use std::os::unix::prelude::OsStrExt;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::thread::spawn;
 
 mod parse_log;
 
@@ -141,6 +145,51 @@ impl Git {
             .arg(file.as_ref())
             .current_dir(&self.repo_root)
             .status()?;
+
+        Ok(())
+    }
+
+    /// Prints the
+    pub fn directory_untracked_less(&self, dir: &Path) -> io::Result<()> {
+        let ls = Command::new("git")
+            .current_dir(&self.repo_root)
+            .arg("ls-files")
+            .arg("--others")
+            .arg("--exclude-standard")
+            .arg("--")
+            .arg(dir)
+            .stdout(Stdio::piped())
+            .spawn()?;
+
+        let ls_stdout = ls.stdout.ok_or_else(|| {
+            io::Error::new(io::ErrorKind::Other, "failed to get stdout of git diff")
+        })?;
+
+        let message = format!(
+            "= Contents of {} =",
+            String::from_utf8_lossy(dir.as_os_str().as_bytes())
+        );
+        let prefix = format!(
+            "{bar}\n{message}\n{bar}\n\n",
+            message = message,
+            bar = "=".repeat(message.len())
+        );
+
+        let mut less = Command::new("less")
+            .arg("-R")
+            .current_dir(&self.repo_root)
+            .stdin(Stdio::piped())
+            .spawn()?;
+
+        let mut stdin = less.stdin.take().expect("Failed to open stdin");
+        spawn(move || {
+            let suffix = "\n= End =\n";
+            let prefix = prefix.into_bytes();
+            let mut input = prefix.chain(ls_stdout).chain(suffix.as_bytes());
+            let _r = io::copy(&mut input, &mut stdin);
+        });
+
+        less.wait()?;
 
         Ok(())
     }
