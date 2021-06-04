@@ -165,10 +165,7 @@ impl Git {
             io::Error::new(io::ErrorKind::Other, "failed to get stdout of git diff")
         })?;
 
-        let message = format!(
-            "= Contents of {} =",
-            String::from_utf8_lossy(dir.as_bytes())
-        );
+        let message = format!("= Contents of {} =", dir.to_string_lossy());
         let prefix = format!(
             "{bar}\n{message}\n{bar}\n\n",
             message = message,
