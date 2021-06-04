@@ -4,7 +4,6 @@ use std::fmt;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::{self, BufRead, BufReader};
-use std::os::unix::prelude::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -168,7 +167,7 @@ impl Git {
 
         let message = format!(
             "= Contents of {} =",
-            String::from_utf8_lossy(dir.as_os_str().as_bytes())
+            String::from_utf8_lossy(dir.as_bytes())
         );
         let prefix = format!(
             "{bar}\n{message}\n{bar}\n\n",
