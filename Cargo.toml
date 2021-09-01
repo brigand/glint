@@ -2,7 +2,7 @@
 authors = ["Frankie Bagnardi <f.bagnardi@gmail.com>"]
 edition = "2018"
 name = "glint"
-version = "6.2.0"
+version = "6.3.4"
 description = "a friendly tool for creating commits in the commitlint style"
 homepage="https://github.com/brigand/glint"
 repository="https://github.com/brigand/glint"
@@ -12,7 +12,7 @@ license = "MIT"
 [dependencies]
 crossterm = "0.17.7"
 unic-segment = "0.9.0"
-structopt = "0.3.15"
+structopt = "0.3.23"
 # Considering using this for `git diff`
 # cursive-multiplex = "^0.2.0"
 
